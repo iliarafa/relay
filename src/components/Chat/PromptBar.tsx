@@ -189,7 +189,7 @@ export function PromptBar() {
   }
 
   return (
-    <div className="border-t bg-background pb-[env(safe-area-inset-bottom)]">
+    <div className="shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)]">
       <div className="max-w-3xl mx-auto px-4 py-3 flex flex-col gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
         {images.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -226,7 +226,7 @@ export function PromptBar() {
               : `Add an ${currentModel === 'claude' ? 'Anthropic' : 'xAI'} API key in Settings to use ${currentModel === 'claude' ? 'Claude' : 'Grok'}.`
           }
           rows={2}
-          className="resize-none"
+          className="resize-none max-h-40"
         />
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
