@@ -79,7 +79,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[85dvh] max-w-lg grid-rows-[auto_minmax(0,1fr)_auto]">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
@@ -87,7 +87,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-5 py-2">
+        <div className="grid gap-5 overflow-y-auto py-2">
           <section className="grid gap-3">
             <h3 className="text-sm font-medium text-muted-foreground">API keys</h3>
             <div className="grid gap-2">
