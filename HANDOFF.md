@@ -174,6 +174,32 @@ What's in place:
 
 **Verified:** `npm run build` passes (Capacitor packages tree-shake on web; `Capacitor.isNativePlatform()` returns `false` in the browser, so the Preferences and Camera branches are dead-code-eliminated for the web bundle in practice). `npm run smoke` still passes. Dev server still boots cleanly with no console errors.
 
+### Phase 10 (debate mode + Claude API modernization) — 2026-08-08
+
+Spec: `docs/superpowers/specs/2026-08-08-debate-mode-design.md`. Highlights:
+
+- **Debate mode** — `Swords` button on completed assistant bubbles runs `debateRounds`
+  (Settings → Behavior, default 3) adversarial exchanges alternating between the models,
+  then a closing synthesis by the original answerer. Orchestrated by `debateMessage(id)`
+  in `src/state/thread.ts` (loop over the existing `runStream`); `isDebating` keeps
+  Stop/input gating live between turns; Stop/clear/snapshot-load all end the debate and
+  keep completed turns. Origin kinds `debate` / `debate-synthesis` render captions
+  (`⚔ debating Claude`, `✦ debate conclusion`) in chat, snapshots, and copied markdown.
+- **Claude API repair** — `thinking: { type: 'enabled', budget_tokens }` was removed by
+  the Anthropic API in the claude-opus-4-7 generation (400s). Requests now send
+  `thinking: { type: 'adaptive', display: 'summarized' }` (or `{ type: 'disabled' }`),
+  `max_tokens: 64000`, and `web_search_20260209`. Default model is `claude-opus-5`;
+  `loadSettings()` maps a stored `claude-opus-4-7` (the old default) forward at read
+  time. The `thinkingBudget` setting is gone.
+
+**Verified:** `npm run build` + `npm run smoke` (SSE parsing, provider event mapping,
+Anthropic request-shape assertions). Real-key verification (below) is manual.
+
+**Manual verification (Ilias, with real keys):** send a Claude message with thinking on —
+text + thinking stream (proves the API fix); start a debate from a Claude answer — Grok
+critiques, alternation runs, Claude synthesizes; Stop mid-debate keeps completed turns;
+snapshot + copy-thread show the new captions.
+
 ## Phase 9 — remaining manual steps (Ilias, at your Mac)
 
 These need a physical iPhone, Xcode, and CocoaPods — out of scope for the AI session.
