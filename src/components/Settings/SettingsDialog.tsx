@@ -37,7 +37,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
   const [grokModel, setGrokModel] = useState(settings.grokModel)
   const [systemPrompt, setSystemPrompt] = useState(settings.systemPrompt)
   const [thinkingOn, setThinkingOn] = useState(settings.thinkingOn)
-  const [thinkingBudget, setThinkingBudget] = useState(settings.thinkingBudget)
+  const [debateRounds, setDebateRounds] = useState(settings.debateRounds)
   const [theme, setTheme] = useState<Theme>(settings.theme)
   const [saving, setSaving] = useState(false)
 
@@ -49,7 +49,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
     setGrokModel(settings.grokModel)
     setSystemPrompt(settings.systemPrompt)
     setThinkingOn(settings.thinkingOn)
-    setThinkingBudget(settings.thinkingBudget)
+    setDebateRounds(settings.debateRounds)
     setTheme(settings.theme)
   }, [open, settings])
 
@@ -60,11 +60,14 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
         settings.setApiKey('anthropic', anthropicKey),
         settings.setApiKey('xai', xaiKey),
         settings.updateSettings({
-          claudeModel: claudeModel.trim() || 'claude-opus-4-7',
+          claudeModel: claudeModel.trim() || 'claude-opus-5',
           grokModel: grokModel.trim() || 'grok-4-latest',
           systemPrompt,
           thinkingOn,
-          thinkingBudget: Number.isFinite(thinkingBudget) ? thinkingBudget : 8000,
+          debateRounds:
+            Number.isFinite(debateRounds) && debateRounds >= 1
+              ? Math.min(Math.floor(debateRounds), 10)
+              : 3,
           theme,
         }),
       ])
@@ -124,7 +127,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
                 spellCheck={false}
                 value={claudeModel}
                 onChange={(e) => setClaudeModel(e.target.value)}
-                placeholder="claude-opus-4-7"
+                placeholder="claude-opus-5"
               />
             </div>
             <div className="grid gap-2">
@@ -159,22 +162,25 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
                   Extended thinking (Claude)
                 </Label>
                 <span className="text-xs text-muted-foreground">
-                  Sends a thinking budget on Claude requests.
+                  Claude thinks adaptively before answering.
                 </span>
               </div>
               <Switch id="thinking-on" checked={thinkingOn} onCheckedChange={setThinkingOn} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="thinking-budget">Thinking budget (tokens)</Label>
+              <Label htmlFor="debate-rounds">Debate rounds</Label>
               <Input
-                id="thinking-budget"
+                id="debate-rounds"
                 type="number"
-                min={1024}
-                step={1024}
-                disabled={!thinkingOn}
-                value={thinkingBudget}
-                onChange={(e) => setThinkingBudget(Number(e.target.value))}
+                min={1}
+                max={10}
+                step={1}
+                value={debateRounds}
+                onChange={(e) => setDebateRounds(Number(e.target.value))}
               />
+              <span className="text-xs text-muted-foreground">
+                Exchanges per debate before the closing synthesis.
+              </span>
             </div>
           </section>
 

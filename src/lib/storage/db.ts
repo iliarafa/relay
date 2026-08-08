@@ -13,7 +13,7 @@ export interface SettingsRow {
   grokModel: string
   systemPrompt: string
   thinkingOn: boolean
-  thinkingBudget: number
+  debateRounds: number
   theme: Theme
   lastUsedModel: ProviderId
 }
@@ -60,11 +60,11 @@ db.version(1).stores({
 
 export const SETTINGS_DEFAULTS: SettingsRow = {
   id: 1,
-  claudeModel: 'claude-opus-4-7',
+  claudeModel: 'claude-opus-5',
   grokModel: 'grok-4-latest',
   systemPrompt: '',
   thinkingOn: true,
-  thinkingBudget: 8000,
+  debateRounds: 3,
   theme: 'system',
   lastUsedModel: 'claude',
 }
@@ -72,7 +72,14 @@ export const SETTINGS_DEFAULTS: SettingsRow = {
 export async function loadSettings(): Promise<SettingsRow> {
   const row = await db.settings.get(1)
   if (!row) return SETTINGS_DEFAULTS
-  return { ...SETTINGS_DEFAULTS, ...row, id: 1 }
+  const merged = { ...SETTINGS_DEFAULTS, ...row, id: 1 as const }
+  // Stored copy of the old shipped default — map forward so existing installs
+  // stop targeting a model whose request shape we no longer send. Custom
+  // model strings are untouched. Read-time only; next Save persists it.
+  if (merged.claudeModel === 'claude-opus-4-7') {
+    merged.claudeModel = 'claude-opus-5'
+  }
+  return merged
 }
 
 export async function saveSettings(patch: Partial<Omit<SettingsRow, 'id'>>): Promise<void> {

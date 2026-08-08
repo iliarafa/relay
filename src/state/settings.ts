@@ -17,7 +17,7 @@ export interface SettingsState {
   grokModel: string
   systemPrompt: string
   thinkingOn: boolean
-  thinkingBudget: number
+  debateRounds: number
   theme: Theme
   lastUsedModel: ProviderId
 
@@ -35,7 +35,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
   grokModel: SETTINGS_DEFAULTS.grokModel,
   systemPrompt: SETTINGS_DEFAULTS.systemPrompt,
   thinkingOn: SETTINGS_DEFAULTS.thinkingOn,
-  thinkingBudget: SETTINGS_DEFAULTS.thinkingBudget,
+  debateRounds: SETTINGS_DEFAULTS.debateRounds,
   theme: SETTINGS_DEFAULTS.theme,
   lastUsedModel: SETTINGS_DEFAULTS.lastUsedModel,
 
@@ -54,7 +54,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
       grokModel: row.grokModel,
       systemPrompt: row.systemPrompt,
       thinkingOn: row.thinkingOn,
-      thinkingBudget: row.thinkingBudget,
+      debateRounds: row.debateRounds,
       theme: row.theme,
       lastUsedModel: row.lastUsedModel,
     })
