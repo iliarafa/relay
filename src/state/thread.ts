@@ -476,6 +476,17 @@ export const useThread = create<ThreadState>((set, get) => {
           set({ messages, isStreaming: true, streamingMessageId: assistantMsg.id })
           await persistThread(messages)
 
+          // Cancellation may land during the persist await, when no stream
+          // exists to abort — re-check before starting the next turn.
+          if (!get().isDebating) {
+            const rollback = get().messages.filter(
+              (m) => m.id !== userMsg.id && m.id !== assistantMsg.id,
+            )
+            set({ messages: rollback, isStreaming: false, streamingMessageId: null })
+            await persistThread(rollback)
+            break
+          }
+
           await runStream({
             provider: target,
             apiKey,

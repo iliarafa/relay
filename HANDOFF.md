@@ -1,6 +1,6 @@
 # ai4me — session handoff
 
-A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone.
+A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.**
 
 ## How to resume
 
@@ -44,7 +44,7 @@ These were settled by interview in the prior session. Don't re-ask.
 - **System prompt:** single global default, editable in Settings, **ships empty**. Sent as the `system` field on both providers. Empty = no system prompt sent (no vendor fallback exists at the API layer).
 - **Vision (v1):** image attach button on the prompt bar. Web: file picker. iOS: camera + photo library via Capacitor. Encoded as base64 / data URI for both providers.
 - **Web search (v1):** per-message toggle. When on, Claude requests include the `web_search` tool; Grok requests enable Live Search. Off by default.
-- **Extended thinking (Claude, v1):** Settings toggle (default on). When on, requests include `thinking` with a default budget (editable). Thinking blocks render as a collapsed `▸ Thinking` expander.
+- **Extended thinking (Claude, v1):** Settings toggle (default on); when on, Claude requests use adaptive thinking (`{ type: 'adaptive', display: 'summarized' }`); thinking blocks render as a collapsed `▸ Thinking` expander.
 
 ### Polish defaults
 - Streaming for both providers (SSE).
@@ -53,7 +53,7 @@ These were settled by interview in the prior session. Don't re-ask.
 - Theme: light / dark / system, persisted.
 - Voice input: rely on iOS keyboard dictation. No custom voice.
 
-## Current state — Phases 1, 2, 3, 4, 5, 6, 7, 8 complete; Phase 9 partially complete (code in place, native bringup pending)
+## Current state — Phases 1, 2, 3, 4, 5, 6, 7, 8 complete; Phase 9 partially complete (code in place, native bringup pending); Phase 10 complete
 
 ### Phase 1 (scaffold) — verified
 - `npm run build` passes
@@ -143,7 +143,7 @@ Notes:
 - `src/state/thread.ts` — `sendMessage(text, options?: SendOptions)` now accepts `{ images?, webSearch? }`. Builds the user message's `content` as `[textBlock?, ...imageBlocks]`. Empty text + zero images → no-op. `runStream` extended with optional `webSearch` (passed as `webSearchEnabled` to `streamProvider`); relay/synthesize don't carry web search forward — they explicitly omit it (per-message decision per locked spec).
 - `src/components/Chat/Message.tsx` — bubble now renders image content blocks as a flex-wrap thumbnail row above the text. User and assistant message bubbles both handle mixed content. Empty-text user bubbles (image-only) hide the `<p>` so we don't render a phantom blank paragraph.
 - `src/components/Chat/PromptBar.tsx` — gained: hidden `<input type="file" accept="image/*" multiple>`, a `Paperclip` attach button, an attachment thumbnail row above the textarea with `×` per image, and a `Globe` web-search toggle button (uses `aria-pressed` + `secondary` variant when on; resets to off after each send). Files are converted via `FileReader.readAsDataURL` and split into `mediaType` + base64 `data` (matching the `ContentBlock` shape consumed by both providers). Send is enabled when text OR images are present.
-- Thinking block (`ThinkingBlock.tsx`) was already wired in Phase 4 and needs no change. Settings already exposes `thinkingOn` + `thinkingBudget`. The `▸ Thinking` expander renders any time Claude streams `thinking-delta` events.
+- Thinking block (`ThinkingBlock.tsx`) was already wired in Phase 4 and needs no change. Settings exposes `thinkingOn` (the `thinkingBudget` field was removed in Phase 10). The `▸ Thinking` expander renders any time Claude streams `thinking-delta` events.
 
 **Verified:** `npm run build` passes. `npm run smoke` still passes. Dev server boots; PromptBar renders with attach + globe + model toggle and 0 console errors. Real image upload + web search end-to-end was not run — it requires the user's API keys and is a pure-UI extension of the already-verified Phase 4 streaming path. Provider request shapes for both `image` blocks and search params were implemented in Phase 3 and are exercised by `npm run smoke`.
 
