@@ -21,6 +21,7 @@ export interface ThreadState {
   messages: ThreadMessage[]
   currentModel: ProviderId
   isStreaming: boolean
+  isDebating: boolean
   streamingMessageId: string | null
   errorMessage: string | null
 
@@ -29,6 +30,7 @@ export interface ThreadState {
   sendMessage: (text: string, options?: SendOptions) => Promise<void>
   relayMessage: (id: string) => Promise<void>
   synthesizeMessage: (id: string) => Promise<void>
+  debateMessage: (id: string) => Promise<void>
   loadFromSnapshot: (messages: ThreadMessage[]) => Promise<void>
   cancel: () => void
   clear: () => Promise<void>
@@ -126,6 +128,18 @@ function providerLabel(p: ProviderId): string {
 
 function synthesizePrompt(from: ProviderId, body: string): string {
   return `Here is what ${providerLabel(from)} said. Critique and synthesize:\n\n${body}`
+}
+
+function debateOpenPrompt(from: ProviderId, body: string): string {
+  return `Here is what ${providerLabel(from)} said. Challenge it: find weaknesses, correct errors, and add what's missing. Be substantive, not polite.\n\n${body}`
+}
+
+function debateReplyPrompt(from: ProviderId): string {
+  return `Respond to ${providerLabel(from)}'s critique above: defend what holds up, concede what doesn't, and improve the answer.`
+}
+
+function debateSynthesisPrompt(): string {
+  return 'The debate is over. Write your final, best answer to the original question, incorporating the valid points raised on both sides.'
 }
 
 export const useThread = create<ThreadState>((set, get) => {
@@ -227,6 +241,7 @@ export const useThread = create<ThreadState>((set, get) => {
     messages: [],
     currentModel: 'claude',
     isStreaming: false,
+    isDebating: false,
     streamingMessageId: null,
     errorMessage: null,
 
@@ -251,7 +266,7 @@ export const useThread = create<ThreadState>((set, get) => {
       const trimmed = text.trim()
       const images = options.images ?? []
       if (!trimmed && images.length === 0) return
-      if (get().isStreaming) return
+      if (get().isStreaming || get().isDebating) return
 
       const provider = get().currentModel
       const { apiKey, model } = getKeyAndModel(provider)
@@ -306,7 +321,7 @@ export const useThread = create<ThreadState>((set, get) => {
     },
 
     async relayMessage(id) {
-      if (get().isStreaming) return
+      if (get().isStreaming || get().isDebating) return
       const source = get().messages.find((m) => m.id === id)
       if (!source || source.role !== 'assistant' || !source.provider) return
       const body = textOf(source)
@@ -353,7 +368,7 @@ export const useThread = create<ThreadState>((set, get) => {
     },
 
     async synthesizeMessage(id) {
-      if (get().isStreaming) return
+      if (get().isStreaming || get().isDebating) return
       const source = get().messages.find((m) => m.id === id)
       if (!source || source.role !== 'assistant' || !source.provider) return
       const body = textOf(source)
@@ -399,6 +414,84 @@ export const useThread = create<ThreadState>((set, get) => {
       })
     },
 
+    async debateMessage(id) {
+      if (get().isStreaming || get().isDebating) return
+      const source = get().messages.find((m) => m.id === id)
+      if (!source || source.role !== 'assistant' || !source.provider) return
+      const body = textOf(source)
+      if (!body) return
+
+      const settings = useSettings.getState()
+      if (!settings.anthropicKey || !settings.xaiKey) {
+        const missing = !settings.anthropicKey ? 'Anthropic' : 'xAI'
+        set({
+          errorMessage: `Debate needs both API keys — add the ${missing} key in Settings.`,
+        })
+        return
+      }
+
+      const rounds = Math.max(1, settings.debateRounds)
+      const sourceProvider = source.provider
+      const otherProvider: ProviderId = sourceProvider === 'claude' ? 'grok' : 'claude'
+
+      set({ isDebating: true, errorMessage: null })
+      try {
+        // Turns 0..rounds-1 are exchanges (alternating, starting with the other
+        // model); turn === rounds is the closing synthesis by the original model.
+        for (let turn = 0; turn <= rounds; turn++) {
+          const isSynthesis = turn === rounds
+          const target: ProviderId = isSynthesis
+            ? sourceProvider
+            : turn % 2 === 0
+              ? otherProvider
+              : sourceProvider
+          const respondingTo: ProviderId = target === 'claude' ? 'grok' : 'claude'
+          const { apiKey, model } = getKeyAndModel(target)
+
+          const promptText = isSynthesis
+            ? debateSynthesisPrompt()
+            : turn === 0
+              ? debateOpenPrompt(sourceProvider, body)
+              : debateReplyPrompt(respondingTo)
+
+          const now = Date.now()
+          const userMsg: ThreadMessage = {
+            id: newId(),
+            role: 'user',
+            content: [{ type: 'text', text: promptText }],
+            origin: {
+              kind: isSynthesis ? 'debate-synthesis' : 'debate',
+              from: respondingTo,
+            },
+            createdAt: now,
+          }
+          const assistantMsg: ThreadMessage = {
+            id: newId(),
+            role: 'assistant',
+            provider: target,
+            content: [],
+            createdAt: now + 1,
+          }
+          const messages = [...get().messages, userMsg, assistantMsg]
+          set({ messages, isStreaming: true, streamingMessageId: assistantMsg.id })
+          await persistThread(messages)
+
+          await runStream({
+            provider: target,
+            apiKey,
+            model,
+            assistantMsgId: assistantMsg.id,
+          })
+
+          // Cancelled (Stop/clear/snapshot-load) or the turn errored — keep
+          // completed turns, skip the rest including the synthesis.
+          if (!get().isDebating || get().errorMessage) break
+        }
+      } finally {
+        set({ isDebating: false })
+      }
+    },
+
     async loadFromSnapshot(snapshotMessages) {
       abortController?.abort()
       const cloned: ThreadMessage[] = snapshotMessages.map((m) => ({
@@ -409,6 +502,7 @@ export const useThread = create<ThreadState>((set, get) => {
       set({
         messages: cloned,
         isStreaming: false,
+        isDebating: false,
         streamingMessageId: null,
         errorMessage: null,
       })
@@ -416,6 +510,7 @@ export const useThread = create<ThreadState>((set, get) => {
     },
 
     cancel() {
+      set({ isDebating: false })
       abortController?.abort()
     },
 
@@ -424,6 +519,7 @@ export const useThread = create<ThreadState>((set, get) => {
       set({
         messages: [],
         isStreaming: false,
+        isDebating: false,
         streamingMessageId: null,
         errorMessage: null,
       })

@@ -24,7 +24,7 @@ export interface ThreadMessage {
   provider?: ProviderId
   content: ContentBlock[]
   thinking?: string
-  origin?: { kind: 'relay' | 'synthesize'; from: ProviderId }
+  origin?: { kind: 'relay' | 'synthesize' | 'debate' | 'debate-synthesis'; from: ProviderId }
   createdAt: number
 }
 
