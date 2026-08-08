@@ -105,6 +105,7 @@ export function PromptBar() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const isStreaming = useThread((s) => s.isStreaming)
+  const isDebating = useThread((s) => s.isDebating)
   const currentModel = useThread((s) => s.currentModel)
   const send = useThread((s) => s.sendMessage)
   const cancel = useThread((s) => s.cancel)
@@ -114,8 +115,10 @@ export function PromptBar() {
   const xaiKey = useSettings((s) => s.xaiKey)
   const hasKey = currentModel === 'claude' ? !!anthropicKey : !!xaiKey
 
+  const busy = isStreaming || isDebating
+
   const hasContent = text.trim().length > 0 || images.length > 0
-  const canSend = !isStreaming && hasKey && hasContent
+  const canSend = !busy && hasKey && hasContent
 
   function submit() {
     if (!canSend) return
@@ -244,7 +247,7 @@ export function PromptBar() {
                   variant="ghost"
                   size="icon-sm"
                   aria-label="Attach image"
-                  disabled={isStreaming}
+                  disabled={busy}
                   onClick={openAttach}
                 >
                   <Paperclip className="size-4" />
@@ -259,7 +262,7 @@ export function PromptBar() {
                   size="icon-sm"
                   aria-label="Toggle web search"
                   aria-pressed={webSearch}
-                  disabled={isStreaming}
+                  disabled={busy}
                   onClick={() => setWebSearch((v) => !v)}
                   className={
                     webSearch
@@ -277,10 +280,10 @@ export function PromptBar() {
             <ModelToggle
               value={currentModel}
               onChange={setCurrentModel}
-              disabled={isStreaming}
+              disabled={busy}
             />
           </div>
-          {isStreaming ? (
+          {busy ? (
             <Button onClick={cancel} variant="outline" size="sm">
               <Square className="size-3.5" /> Stop
             </Button>

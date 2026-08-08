@@ -10,6 +10,8 @@ function providerLabel(p?: ProviderId): string {
 function originLine(origin: NonNullable<ThreadMessage['origin']>): string {
   const fromLabel = providerLabel(origin.from)
   if (origin.kind === 'relay') return `_↻ relayed from ${fromLabel}_`
+  if (origin.kind === 'debate') return `_⚔ debating ${fromLabel}_`
+  if (origin.kind === 'debate-synthesis') return '_✦ debate conclusion_'
   return `_✦ synthesizing ${fromLabel}_`
 }
 

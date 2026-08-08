@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRightLeft, Check, Copy, Sparkles } from 'lucide-react'
+import { ArrowRightLeft, Check, Copy, Sparkles, Swords } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Markdown } from '@/lib/markdown'
 import { textOf } from '@/lib/messageText'
@@ -24,6 +24,8 @@ function providerLabel(provider?: ProviderId): string {
 function originCaption(origin: NonNullable<ThreadMessage['origin']>): string {
   const fromLabel = providerLabel(origin.from)
   if (origin.kind === 'relay') return `↻ relayed from ${fromLabel}`
+  if (origin.kind === 'debate') return `⚔ debating ${fromLabel}`
+  if (origin.kind === 'debate-synthesis') return '✦ debate conclusion'
   return `✦ synthesizing ${fromLabel}`
 }
 
@@ -46,6 +48,9 @@ export function Message({
   const isStreaming = useThread((s) => s.isStreaming)
   const relayMessage = useThread((s) => s.relayMessage)
   const synthesizeMessage = useThread((s) => s.synthesizeMessage)
+  const isDebating = useThread((s) => s.isDebating)
+  const debateMessage = useThread((s) => s.debateMessage)
+  const debateRounds = useSettings((s) => s.debateRounds)
   const anthropicKey = useSettings((s) => s.anthropicKey)
   const xaiKey = useSettings((s) => s.xaiKey)
 
@@ -65,11 +70,19 @@ export function Message({
     otherProvider === 'claude' ? anthropicKey : otherProvider === 'grok' ? xaiKey : ''
   const otherLabel = otherProvider ? providerLabel(otherProvider) : ''
 
-  const relaySynthDisabled = isStreaming || !otherKey
-  const disabledReason = isStreaming
-    ? 'Wait for streaming to finish'
+  const busy = isStreaming || isDebating
+  const relaySynthDisabled = busy || !otherKey
+  const disabledReason = busy
+    ? 'Wait for the current response to finish'
     : !otherKey
       ? `Add a ${otherLabel} API key in Settings`
+      : ''
+
+  const debateDisabled = busy || !anthropicKey || !xaiKey
+  const debateDisabledReason = busy
+    ? 'Wait for the current response to finish'
+    : !anthropicKey || !xaiKey
+      ? `Debate needs both API keys — add the ${!anthropicKey ? 'Anthropic' : 'xAI'} key in Settings`
       : ''
 
   async function handleCopy() {
@@ -180,6 +193,24 @@ export function Message({
                     {relaySynthDisabled
                       ? disabledReason
                       : `Ask ${otherLabel} to synthesize`}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Start debate"
+                      disabled={debateDisabled}
+                      onClick={() => void debateMessage(message.id)}
+                    >
+                      <Swords className="size-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {debateDisabled
+                      ? debateDisabledReason
+                      : `Debate: ${debateRounds} exchange${debateRounds === 1 ? '' : 's'} + synthesis`}
                   </TooltipContent>
                 </Tooltip>
               </>
