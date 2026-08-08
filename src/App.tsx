@@ -21,7 +21,7 @@ import { ChatView } from '@/components/Chat/ChatView'
 import { useSettings } from '@/state/settings'
 import { useThread } from '@/state/thread'
 import { useSnapshots } from '@/state/snapshots'
-import { applyTheme, watchSystemTheme } from '@/lib/theme'
+import { applyFontScale, applyTheme, watchSystemTheme } from '@/lib/theme'
 import { threadToMarkdown } from '@/lib/threadMarkdown'
 
 function App() {
@@ -31,6 +31,7 @@ function App() {
   const [copied, setCopied] = useState(false)
   const settingsHydrated = useSettings((s) => s.hydrated)
   const theme = useSettings((s) => s.theme)
+  const fontScale = useSettings((s) => s.fontScale)
   const threadHydrated = useThread((s) => s.hydrated)
   const hasMessages = useThread((s) => s.messages.length > 0)
   const clearThread = useThread((s) => s.clear)
@@ -48,6 +49,11 @@ function App() {
     applyTheme(theme)
     return watchSystemTheme(() => useSettings.getState().theme)
   }, [settingsHydrated, theme])
+
+  useEffect(() => {
+    if (!settingsHydrated) return
+    applyFontScale(fontScale)
+  }, [settingsHydrated, fontScale])
 
   function handleClear() {
     if (confirm('Clear the current thread? Snapshot it first if you want to keep it.')) {

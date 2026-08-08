@@ -14,6 +14,7 @@ export interface SettingsRow {
   systemPrompt: string
   thinkingOn: boolean
   debateRounds: number
+  fontScale: number
   theme: Theme
   lastUsedModel: ProviderId
 }
@@ -65,6 +66,7 @@ export const SETTINGS_DEFAULTS: SettingsRow = {
   systemPrompt: '',
   thinkingOn: true,
   debateRounds: 3,
+  fontScale: 1,
   theme: 'system',
   lastUsedModel: 'claude',
 }

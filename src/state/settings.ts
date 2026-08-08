@@ -18,6 +18,7 @@ export interface SettingsState {
   systemPrompt: string
   thinkingOn: boolean
   debateRounds: number
+  fontScale: number
   theme: Theme
   lastUsedModel: ProviderId
 
@@ -36,6 +37,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
   systemPrompt: SETTINGS_DEFAULTS.systemPrompt,
   thinkingOn: SETTINGS_DEFAULTS.thinkingOn,
   debateRounds: SETTINGS_DEFAULTS.debateRounds,
+  fontScale: SETTINGS_DEFAULTS.fontScale,
   theme: SETTINGS_DEFAULTS.theme,
   lastUsedModel: SETTINGS_DEFAULTS.lastUsedModel,
 
@@ -55,6 +57,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
       systemPrompt: row.systemPrompt,
       thinkingOn: row.thinkingOn,
       debateRounds: row.debateRounds,
+      fontScale: row.fontScale,
       theme: row.theme,
       lastUsedModel: row.lastUsedModel,
     })

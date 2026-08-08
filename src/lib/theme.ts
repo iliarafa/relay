@@ -16,3 +16,8 @@ export function watchSystemTheme(getTheme: () => Theme): () => void {
   mql.addEventListener('change', handler)
   return () => mql.removeEventListener('change', handler)
 }
+
+export function applyFontScale(scale: number): void {
+  const root = document.documentElement
+  root.style.fontSize = Number.isFinite(scale) && scale !== 1 ? `${scale * 100}%` : ''
+}

@@ -20,7 +20,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { Slider } from '@/components/ui/slider'
 import { useSettings } from '@/state/settings'
+import { applyFontScale } from '@/lib/theme'
 import type { Theme } from '@/lib/storage/db'
 
 interface Props {
@@ -38,6 +40,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
   const [systemPrompt, setSystemPrompt] = useState(settings.systemPrompt)
   const [thinkingOn, setThinkingOn] = useState(settings.thinkingOn)
   const [debateRounds, setDebateRounds] = useState(settings.debateRounds)
+  const [fontScale, setFontScale] = useState(settings.fontScale)
   const [theme, setTheme] = useState<Theme>(settings.theme)
   const [saving, setSaving] = useState(false)
 
@@ -50,8 +53,19 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
     setSystemPrompt(settings.systemPrompt)
     setThinkingOn(settings.thinkingOn)
     setDebateRounds(settings.debateRounds)
+    setFontScale(settings.fontScale)
     setTheme(settings.theme)
   }, [open, settings])
+
+  useEffect(() => {
+    if (!open) return
+    applyFontScale(fontScale)
+  }, [open, fontScale])
+
+  useEffect(() => {
+    if (open) return
+    applyFontScale(useSettings.getState().fontScale)
+  }, [open])
 
   async function handleSave() {
     setSaving(true)
@@ -68,6 +82,10 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
             Number.isFinite(debateRounds) && debateRounds >= 1
               ? Math.min(Math.floor(debateRounds), 10)
               : 3,
+          fontScale:
+            Number.isFinite(fontScale)
+              ? Math.min(Math.max(fontScale, 0.85), 1.3)
+              : 1,
           theme,
         }),
       ])
@@ -200,6 +218,17 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
                   <SelectItem value="system">System</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="font-scale">Font size · {Math.round(fontScale * 100)}%</Label>
+              <Slider
+                id="font-scale"
+                min={0.85}
+                max={1.3}
+                step={0.05}
+                value={[fontScale]}
+                onValueChange={([v]) => setFontScale(Math.round(v * 100) / 100)}
+              />
             </div>
           </section>
         </div>
