@@ -156,7 +156,6 @@ export const useThread = create<ThreadState>((set, get) => {
         model,
         systemPrompt: settings.systemPrompt,
         thinkingEnabled: settings.thinkingOn,
-        thinkingBudget: settings.thinkingBudget,
         webSearchEnabled: webSearch,
         messages: requestMessages,
         signal,

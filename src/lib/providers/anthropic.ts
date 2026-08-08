@@ -32,29 +32,27 @@ interface AnthropicRequestBody {
   stream: true
   messages: AnthropicMessage[]
   system?: string
-  thinking?: { type: 'enabled'; budget_tokens: number }
+  thinking?: { type: 'adaptive'; display: 'summarized' } | { type: 'disabled' }
   tools?: Array<{ type: string; name: string }>
 }
 
 export function buildAnthropicRequest(req: StreamRequest): AnthropicRequestBody {
-  const thinkingOn =
-    !!req.thinkingEnabled && !!req.thinkingBudget && req.thinkingBudget > 0
   const body: AnthropicRequestBody = {
     model: req.model,
-    max_tokens: thinkingOn
-      ? (req.thinkingBudget as number) + ANTHROPIC_MAX_TOKENS
-      : ANTHROPIC_MAX_TOKENS,
+    max_tokens: ANTHROPIC_MAX_TOKENS,
     stream: true,
     messages: req.messages.map(toAnthropicMessage),
   }
   if (req.systemPrompt && req.systemPrompt.trim()) {
     body.system = req.systemPrompt
   }
-  if (thinkingOn) {
-    body.thinking = { type: 'enabled', budget_tokens: req.thinkingBudget as number }
-  }
+  // display: 'summarized' is required — the API default omits thinking text,
+  // which would leave the ▸ Thinking expander permanently empty.
+  body.thinking = req.thinkingEnabled
+    ? { type: 'adaptive', display: 'summarized' }
+    : { type: 'disabled' }
   if (req.webSearchEnabled) {
-    body.tools = [{ type: 'web_search_20250305', name: 'web_search' }]
+    body.tools = [{ type: 'web_search_20260209', name: 'web_search' }]
   }
   return body
 }

@@ -21,7 +21,6 @@ export interface StreamRequest {
   systemPrompt?: string
   messages: ProviderMessage[]
   thinkingEnabled?: boolean
-  thinkingBudget?: number
   webSearchEnabled?: boolean
   signal?: AbortSignal
 }
@@ -37,4 +36,5 @@ export class ProviderError extends Error {
   }
 }
 
-export const ANTHROPIC_MAX_TOKENS = 8192
+// Caps thinking + response together on current models; we always stream, so no timeout risk.
+export const ANTHROPIC_MAX_TOKENS = 64000

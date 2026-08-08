@@ -1,4 +1,4 @@
-import { streamAnthropic } from '../src/lib/providers/anthropic.ts'
+import { buildAnthropicRequest, streamAnthropic } from '../src/lib/providers/anthropic.ts'
 import { streamXai } from '../src/lib/providers/xai.ts'
 import type { StreamEvent } from '../src/lib/providers/types.ts'
 
@@ -88,7 +88,6 @@ async function run() {
         model: 'claude-opus-4-7',
         messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
         thinkingEnabled: true,
-        thinkingBudget: 4096,
       }),
     )
     eq('anthropic events', events, [
@@ -130,6 +129,39 @@ async function run() {
       { type: 'done' },
     ])
   })
+
+  // Anthropic: request body shape (current API — adaptive thinking, no budget_tokens)
+  {
+    const onBody = buildAnthropicRequest({
+      apiKey: 'k',
+      model: 'claude-opus-5',
+      messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+      thinkingEnabled: true,
+    })
+    eq('anthropic request: adaptive thinking', onBody.thinking, {
+      type: 'adaptive',
+      display: 'summarized',
+    })
+    eq('anthropic request: max_tokens', onBody.max_tokens, 64000)
+
+    const offBody = buildAnthropicRequest({
+      apiKey: 'k',
+      model: 'claude-opus-5',
+      messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+      thinkingEnabled: false,
+    })
+    eq('anthropic request: thinking disabled', offBody.thinking, { type: 'disabled' })
+
+    const searchBody = buildAnthropicRequest({
+      apiKey: 'k',
+      model: 'claude-opus-5',
+      messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+      webSearchEnabled: true,
+    })
+    eq('anthropic request: web search tool', searchBody.tools, [
+      { type: 'web_search_20260209', name: 'web_search' },
+    ])
+  }
 
   // Anthropic: error response
   globalThis.fetch = (async () =>
