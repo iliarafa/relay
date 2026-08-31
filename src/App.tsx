@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
   BookmarkPlus,
-  Check,
-  Copy,
   Library,
   Settings as SettingsIcon,
   Trash2,
@@ -21,14 +19,13 @@ import { ChatView } from '@/components/Chat/ChatView'
 import { useSettings } from '@/state/settings'
 import { useThread } from '@/state/thread'
 import { useSnapshots } from '@/state/snapshots'
+import { ExportMenu } from '@/components/Export/ExportMenu'
 import { applyFontScale, applyTheme, watchSystemTheme } from '@/lib/theme'
-import { threadToMarkdown } from '@/lib/threadMarkdown'
 
 function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [saveSnapshotOpen, setSaveSnapshotOpen] = useState(false)
   const [snapshotsOpen, setSnapshotsOpen] = useState(false)
-  const [copied, setCopied] = useState(false)
   const settingsHydrated = useSettings((s) => s.hydrated)
   const theme = useSettings((s) => s.theme)
   const fontScale = useSettings((s) => s.fontScale)
@@ -61,18 +58,6 @@ function App() {
     }
   }
 
-  async function handleCopyThread() {
-    const messages = useThread.getState().messages
-    if (messages.length === 0) return
-    try {
-      await navigator.clipboard.writeText(threadToMarkdown(messages))
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch (e) {
-      console.error('copy thread failed', e)
-    }
-  }
-
   return (
     <TooltipProvider delayDuration={200}>
       <div className="bg-background text-foreground h-dvh flex flex-col overflow-hidden">
@@ -81,25 +66,7 @@ function App() {
           <div className="flex items-center gap-1">
             {hasMessages && (
               <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Copy thread as markdown"
-                      onClick={() => void handleCopyThread()}
-                    >
-                      {copied ? (
-                        <Check className="size-4" />
-                      ) : (
-                        <Copy className="size-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {copied ? 'Copied' : 'Copy thread as markdown'}
-                  </TooltipContent>
-                </Tooltip>
+                <ExportMenu />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button

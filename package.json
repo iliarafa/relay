@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "smoke": "node --experimental-strip-types --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"./scripts/alias-loader.mjs\", pathToFileURL(\"./\"));' scripts/sse-smoke.ts && node --experimental-strip-types --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"./scripts/alias-loader.mjs\", pathToFileURL(\"./\"));' scripts/providers-smoke.ts"
+    "smoke": "node --experimental-strip-types --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"./scripts/alias-loader.mjs\", pathToFileURL(\"./\"));' scripts/sse-smoke.ts && node --experimental-strip-types --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"./scripts/alias-loader.mjs\", pathToFileURL(\"./\"));' scripts/providers-smoke.ts && node --experimental-strip-types --import 'data:text/javascript,import { register } from \"node:module\"; import { pathToFileURL } from \"node:url\"; register(\"./scripts/alias-loader.mjs\", pathToFileURL(\"./\"));' scripts/export-smoke.ts"
   },
   "dependencies": {
     "@capacitor/camera": "^8.2.0",
@@ -19,7 +19,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^4.4.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.14.0",
+    "marked": "^18.0.11",
     "radix-ui": "^1.4.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
