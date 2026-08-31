@@ -26,3 +26,4 @@ dist-ssr
 # Local Claude Code state
 .claude/settings.local.json
 .playwright-mcp/
+.vercel
