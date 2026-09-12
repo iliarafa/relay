@@ -22,6 +22,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Slider } from '@/components/ui/slider'
 import { ApiKeyField } from './ApiKeyField'
+import { useUi } from '@/state/ui'
 import { useSettings } from '@/state/settings'
 import { applyFontScale } from '@/lib/theme'
 import {
@@ -259,13 +260,29 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
           </section>
         </div>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
+        <DialogFooter className="sm:justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="label sm:mr-auto"
+            onClick={() => {
+              // Let the Settings close animation finish before the About dialog
+              // mounts, so Radix's focus scopes hand over cleanly.
+              onOpenChange(false)
+              setTimeout(() => useUi.getState().setAboutOpen(true), 180)
+            }}
+            disabled={saving}
+          >
+            About Relay
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

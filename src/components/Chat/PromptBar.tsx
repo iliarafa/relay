@@ -196,6 +196,7 @@ export function PromptBar() {
           </div>
         )}
         <Textarea
+          id="composer"
           ref={taRef}
           value={text}
           onChange={(e) => setText(e.target.value)}

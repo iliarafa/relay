@@ -2,11 +2,11 @@
 
 **Relay** (repo `ai4me`) — Ilias's personal Claude + Grok client. Web app on Vercel (project `relay`, https://relay-rafa1l.vercel.app), wrapped with Capacitor for iPhone.
 
-**Status (2026-09-12):** Phases 1–8 and 10–15 complete and verified. Phase 9 (Capacitor) has all code in place and the `ios/` project generated; device runs happen in Xcode on Ilias's Mac. Local `main`, `origin/main` (github.com/iliarafa/relay), Vercel production, and the synced iOS web assets are all at the same commit as of the end of the 2026-09-12 session.
+**Status (2026-09-12):** Phases 1–8 and 10–16 complete and verified. Phase 9 (Capacitor) has all code in place and the `ios/` project generated; device runs happen in Xcode on Ilias's Mac. Local `main`, `origin/main` (github.com/iliarafa/relay), Vercel production, and the synced iOS web assets are all at the same commit as of the end of the 2026-09-12 session.
 
 ## How to resume
 
-1. Read this file top to bottom: locked decisions, then the phase log (newest phases are 11–15, dated 2026-09-12), then Conventions.
+1. Read this file top to bottom: locked decisions, then the phase log (newest phases are 11–16, dated 2026-09-12), then Conventions.
 2. `npm run build && npm run smoke` — the tree should be green before any change (98 smoke cases as of Phase 15).
 3. Ship with the "Shipping" section below. Phase 9's device steps remain manual (Xcode).
 4. Testing in the desktop app's browser pane: **do not seed or clear the `ai4me` IndexedDB / localStorage there** — that pane profile holds Ilias's real keys and thread. Seed test data under a different DB name, or snapshot first.
@@ -56,7 +56,7 @@ These were settled by interview in the prior session. Don't re-ask.
 - Theme: light / dark / system, persisted.
 - Voice input: rely on iOS keyboard dictation. No custom voice.
 
-## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–15 complete
+## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–16 complete
 
 ### Phase 1 (scaffold) — verified
 - `npm run build` passes
@@ -286,6 +286,17 @@ The Settings key inputs were wide password fields that filled with dozens of dot
 
 **Verified:** `npm run build`; `npm run smoke`; browser pane: empty → narrow inputs; junk → hint; dummy well-formed key → chip + "rejected" (401); Replace reopens; the full key never renders. Real-key green check is manual (Ilias).
 
+### Phase 16 (onboarding card + About Relay) — 2026-09-12
+
+The empty thread used to be two grey lines. It is now a placard in the cover's language that explains the app; the same card reopens from Settings.
+
+- `src/state/ui.ts` — new tiny Zustand store: `settingsOpen`, `aboutOpen` + setters. `App.tsx` reads `settingsOpen` from here instead of local state, so the card and the Settings footer can open dialogs without prop-drilling.
+- `src/components/Onboarding/OnboardingCard.tsx` — `variant: 'empty' | 'dialog'`. Eyebrow "Dual-model thread", `RELAY` at 44px/800, tagline "One question. Two minds. You decide.", then `.label` sections: What it does · Why two models (the truth-seeking argument: a single model agrees with your framing; two trained apart make different mistakes; what survives a defence is worth more) · The moves (Relay / Synthesize / Debate / Export rows with the action-row icons) · an "Also:" line · Your data. One outlined CTA: **Add API keys** (no keys → opens Settings), **Start below** (keys → focuses `#composer`), **Close** (dialog variant).
+- `src/components/Onboarding/AboutDialog.tsx` — Dialog with sr-only title/description wrapping the card; mounted in `App.tsx`.
+- `src/components/Chat/MessageList.tsx` — empty state renders the card. `PromptBar.tsx` — textarea has `id="composer"`. `SettingsDialog.tsx` — footer is `sm:justify-between` with a ghost `.label` **About Relay** button on the left (closes Settings, opens About).
+
+**Verified:** `npm run build`; `npm run smoke` (98, unchanged); browser pane on the (already empty) thread — card at desktop and 375px, Start below focuses the composer, About Relay from Settings opens the dialog, Close/Escape work. "Add API keys" path is what a fresh device sees (manual).
+
 ## Phase 9 — remaining manual steps (Ilias, at your Mac)
 
 These need a physical iPhone, Xcode, and CocoaPods — out of scope for the AI session.
@@ -366,6 +377,7 @@ Phases 11–15 in one session, each committed separately, then deployed to produ
 - **12** debate readability: 150-word verdict-first cross-model prompts, Reply length setting, debate turns fold to their first paragraph, prompt bubbles fold to captions, live debate tracker strip, thinking auto-opens while a bubble is empty.
 - **13** Synthesize merges both models' views when both have spoken (`merge` origin).
 - **14** cover-aligned restyle. A first attempt — thin Outfit typeface, violet-black, iridescent accents, animated "velocity field" — was fully built, then rejected by Ilias as "completely wrong direction" and reverted before commit. The accepted direction came from a screenshot of his site's cover page: pure black, heavy `RELAY`, grey tracked-caps labels, hairlines, static stars. **Show a mockup and get approval before restyling anything.**
+- **16** onboarding card as the empty-thread state + About Relay in Settings.
 - **15** API key fields: prefix-hinted narrow input, masked chip, live validity check (xAI signals a bad key with 400, not 401).
 - Incident: while seeding a test thread in the desktop-app browser pane, the pane's real `ai4me` thread table was cleared and its theme setting reset to System. Snapshots, production, and iOS data were untouched. See "How to resume" step 4.
 
@@ -391,6 +403,9 @@ ai4me/
 │   │   │   ├── MessageList.tsx
 │   │   │   ├── PromptBar.tsx
 │   │   │   └── ThinkingBlock.tsx
+│   │   ├── Onboarding/
+│   │   │   ├── OnboardingCard.tsx ← empty-thread placard / About body (Phase 16)
+│   │   │   └── AboutDialog.tsx
 │   │   ├── Export/
 │   │   │   └── ExportMenu.tsx  ← copy / .md / .html / .pdf dropdown (header)
 │   │   ├── Settings/
@@ -426,6 +441,7 @@ ai4me/
 │   ├── state/
 │   │   ├── settings.ts        ← Zustand store (hydrated from db + keys)
 │   │   ├── snapshots.ts       ← Zustand store (saved threads, hydrated from db)
+│   │   ├── ui.ts              ← dialog visibility shared across components
 │   │   └── thread.ts          ← Zustand store (messages, streaming, currentModel)
 │   └── main.tsx
 ├── scripts/

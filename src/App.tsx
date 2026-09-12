@@ -19,11 +19,14 @@ import { ChatView } from '@/components/Chat/ChatView'
 import { useSettings } from '@/state/settings'
 import { useThread } from '@/state/thread'
 import { useSnapshots } from '@/state/snapshots'
+import { useUi } from '@/state/ui'
+import { AboutDialog } from '@/components/Onboarding/AboutDialog'
 import { ExportMenu } from '@/components/Export/ExportMenu'
 import { applyFontScale, applyTheme, watchSystemTheme } from '@/lib/theme'
 
 function App() {
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsOpen = useUi((s) => s.settingsOpen)
+  const setSettingsOpen = useUi((s) => s.setSettingsOpen)
   const [saveSnapshotOpen, setSaveSnapshotOpen] = useState(false)
   const [snapshotsOpen, setSnapshotsOpen] = useState(false)
   const settingsHydrated = useSettings((s) => s.hydrated)
@@ -138,6 +141,7 @@ function App() {
           onOpenChange={setSaveSnapshotOpen}
         />
         <SnapshotsDialog open={snapshotsOpen} onOpenChange={setSnapshotsOpen} />
+        <AboutDialog />
       </div>
     </TooltipProvider>
   )
