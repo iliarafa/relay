@@ -4,6 +4,7 @@ import {
   loadSettings,
   saveSettings,
   type ProviderId,
+  type ReplyLength,
   type SettingsRow,
   type Theme,
 } from '@/lib/storage/db'
@@ -18,6 +19,7 @@ export interface SettingsState {
   systemPrompt: string
   thinkingOn: boolean
   debateRounds: number
+  replyLength: ReplyLength
   fontScale: number
   theme: Theme
   lastUsedModel: ProviderId
@@ -37,6 +39,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
   systemPrompt: SETTINGS_DEFAULTS.systemPrompt,
   thinkingOn: SETTINGS_DEFAULTS.thinkingOn,
   debateRounds: SETTINGS_DEFAULTS.debateRounds,
+  replyLength: SETTINGS_DEFAULTS.replyLength,
   fontScale: SETTINGS_DEFAULTS.fontScale,
   theme: SETTINGS_DEFAULTS.theme,
   lastUsedModel: SETTINGS_DEFAULTS.lastUsedModel,
@@ -57,6 +60,7 @@ export const useSettings = create<SettingsState>((set, get) => ({
       systemPrompt: row.systemPrompt,
       thinkingOn: row.thinkingOn,
       debateRounds: row.debateRounds,
+      replyLength: row.replyLength,
       fontScale: row.fontScale,
       theme: row.theme,
       lastUsedModel: row.lastUsedModel,

@@ -18,6 +18,7 @@ import {
 import { useSnapshots } from '@/state/snapshots'
 import { useThread } from '@/state/thread'
 import { Message } from '@/components/Chat/Message'
+import { shouldCollapseDebateTurn } from '@/lib/messageText'
 
 interface Props {
   open: boolean
@@ -113,7 +114,14 @@ export function SnapshotsDialog({ open, onOpenChange }: Props) {
                   This snapshot is empty.
                 </p>
               ) : (
-                selected.messages.map((m) => <Message key={m.id} message={m} readOnly />)
+                selected.messages.map((m, i) => (
+                  <Message
+                    key={m.id}
+                    message={m}
+                    readOnly
+                    collapsed={shouldCollapseDebateTurn(selected.messages, i)}
+                  />
+                ))
               )}
             </div>
           </ScrollArea>

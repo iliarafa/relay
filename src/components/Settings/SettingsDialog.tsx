@@ -29,7 +29,7 @@ import {
   GROK_46_ID,
   GROK_MODELS,
 } from '@/lib/models'
-import type { Theme } from '@/lib/storage/db'
+import type { ReplyLength, Theme } from '@/lib/storage/db'
 
 interface Props {
   open: boolean
@@ -46,6 +46,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
   const [systemPrompt, setSystemPrompt] = useState(settings.systemPrompt)
   const [thinkingOn, setThinkingOn] = useState(settings.thinkingOn)
   const [debateRounds, setDebateRounds] = useState(settings.debateRounds)
+  const [replyLength, setReplyLength] = useState<ReplyLength>(settings.replyLength)
   const [fontScale, setFontScale] = useState(settings.fontScale)
   const [theme, setTheme] = useState<Theme>(settings.theme)
   const [saving, setSaving] = useState(false)
@@ -59,6 +60,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
     setSystemPrompt(settings.systemPrompt)
     setThinkingOn(settings.thinkingOn)
     setDebateRounds(settings.debateRounds)
+    setReplyLength(settings.replyLength)
     setFontScale(settings.fontScale)
     setTheme(settings.theme)
   }, [open, settings])
@@ -88,6 +90,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
             Number.isFinite(debateRounds) && debateRounds >= 1
               ? Math.min(Math.floor(debateRounds), 10)
               : 3,
+          replyLength,
           fontScale:
             Number.isFinite(fontScale)
               ? Math.min(Math.max(fontScale, 0.85), 1.3)
@@ -196,6 +199,22 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="reply-length">Reply length</Label>
+              <Select value={replyLength} onValueChange={(v) => setReplyLength(v as ReplyLength)}>
+                <SelectTrigger id="reply-length" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="concise">Concise</SelectItem>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="detailed">Detailed</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">
+                Applies to every turn. Debate exchanges are always kept short.
+              </span>
             </div>
             <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
               <div className="grid gap-0.5">

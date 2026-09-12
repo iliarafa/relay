@@ -1,17 +1,13 @@
 import { useState } from 'react'
-import { ArrowRightLeft, Check, Copy, Sparkles, Swords } from 'lucide-react'
+import { ArrowRightLeft, Check, ChevronDown, ChevronUp, Copy, Sparkles, Swords } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Markdown } from '@/lib/markdown'
-import { textOf } from '@/lib/messageText'
+import { firstParagraph, isDebatePrompt, textOf } from '@/lib/messageText'
 import { messageToMarkdown } from '@/lib/threadMarkdown'
 import { modelLabel } from '@/lib/models'
 import type { ProviderId, ThreadMessage } from '@/lib/storage/db'
 import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useThread } from '@/state/thread'
 import { useSettings } from '@/state/settings'
 import { ThinkingBlock } from './ThinkingBlock'
@@ -32,17 +28,27 @@ export function Message({
   message,
   streaming,
   readOnly,
+  collapsed,
 }: {
   message: ThreadMessage
   streaming?: boolean
   readOnly?: boolean
+  /** Fold this (debate) turn to its first paragraph. The user's toggle overrides. */
+  collapsed?: boolean
 }) {
   const isUser = message.role === 'user'
   const text = textOf(message)
+  const debatePrompt = isUser && isDebatePrompt(message)
+  const [showPrompt, setShowPrompt] = useState(false)
+  const [userToggle, setUserToggle] = useState<boolean | null>(null)
+  const { preview, truncated } = firstParagraph(text)
   const images = message.content.filter(
     (b): b is { type: 'image'; mediaType: string; data: string } => b.type === 'image',
   )
   const showCursor = streaming && message.role === 'assistant'
+  // Fold only when there is something to fold; streaming turns always render in full.
+  const foldable = !isUser && !!collapsed && truncated && !showCursor
+  const isCollapsed = foldable && (userToggle === null ? true : !userToggle)
 
   const isStreaming = useThread((s) => s.isStreaming)
   const relayMessage = useThread((s) => s.relayMessage)
@@ -57,7 +63,7 @@ export function Message({
 
   const showRelaySynthesize =
     !readOnly && !isUser && !!message.provider && !showCursor && text.length > 0
-  const showCopy = !readOnly && !showCursor && text.length > 0
+  const showCopy = !readOnly && !showCursor && text.length > 0 && (!debatePrompt || showPrompt)
   const showActionRow = showCopy
 
   const otherProvider: ProviderId | null = message.provider
@@ -97,10 +103,7 @@ export function Message({
   return (
     <div className={cn('flex w-full', isUser ? 'justify-end' : 'justify-start')}>
       <div
-        className={cn(
-          'flex flex-col gap-1.5 max-w-[85%]',
-          isUser ? 'items-end' : 'items-start',
-        )}
+        className={cn('flex flex-col gap-1.5 max-w-[85%]', isUser ? 'items-end' : 'items-start')}
       >
         {!isUser && message.provider && (
           <span className="text-xs text-muted-foreground px-1">
@@ -108,54 +111,82 @@ export function Message({
           </span>
         )}
         {isUser && message.origin && (
-          <span className="text-xs text-muted-foreground px-1">
+          <span className="text-xs text-muted-foreground px-1 inline-flex items-center gap-2">
             {originCaption(message.origin)}
+            {debatePrompt && (
+              <button
+                type="button"
+                onClick={() => setShowPrompt((v) => !v)}
+                className="underline underline-offset-2 opacity-70 hover:opacity-100"
+              >
+                {showPrompt ? 'hide prompt' : 'show prompt'}
+              </button>
+            )}
           </span>
         )}
         {message.thinking && (
           <div className={cn('px-1', isUser && 'text-right')}>
-            <ThinkingBlock text={message.thinking} streaming={showCursor && !text} />
+            <ThinkingBlock
+              text={message.thinking}
+              streaming={showCursor && !text}
+              autoOpen={showCursor && !text}
+            />
           </div>
         )}
-        {(text || images.length > 0 || !message.thinking || !showCursor) && (
-          <div
-            className={cn(
-              'rounded-2xl px-4 py-2.5 flex flex-col gap-2',
-              isUser
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-foreground',
-            )}
-          >
-            {images.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {images.map((img, i) => (
-                  <img
-                    key={i}
-                    src={`data:${img.mediaType};base64,${img.data}`}
-                    alt=""
-                    className="rounded-md max-h-48 max-w-full object-cover"
-                  />
-                ))}
-              </div>
-            )}
-            {isUser
-              ? text && (
-                  message.origin ? (
+        {(!debatePrompt || showPrompt) &&
+          (text || images.length > 0 || !message.thinking || !showCursor) && (
+            <div
+              className={cn(
+                'rounded-2xl px-4 py-2.5 flex flex-col gap-2',
+                isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
+              )}
+            >
+              {images.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {images.map((img, i) => (
+                    <img
+                      key={i}
+                      src={`data:${img.mediaType};base64,${img.data}`}
+                      alt=""
+                      className="rounded-md max-h-48 max-w-full object-cover"
+                    />
+                  ))}
+                </div>
+              )}
+              {isUser
+                ? text &&
+                  (message.origin ? (
                     <Markdown text={text} />
                   ) : (
                     <p className="text-sm whitespace-pre-wrap break-words">{text}</p>
-                  )
-                )
-              : (text || showCursor) && (
-                  <div>
-                    <Markdown text={text} />
-                    {showCursor && (
-                      <span className="inline-block w-2 h-3.5 align-text-bottom bg-current opacity-60 animate-pulse ml-0.5" />
-                    )}
-                  </div>
-                )}
-          </div>
-        )}
+                  ))
+                : (text || showCursor) && (
+                    <div>
+                      <Markdown text={isCollapsed ? preview : text} />
+                      {showCursor && (
+                        <span className="inline-block w-2 h-3.5 align-text-bottom bg-current opacity-60 animate-pulse ml-0.5" />
+                      )}
+                      {foldable && (
+                        <button
+                          type="button"
+                          onClick={() => setUserToggle(isCollapsed)}
+                          className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          {isCollapsed ? (
+                            <>
+                              <ChevronDown className="size-3" /> Show more
+                            </>
+                          ) : (
+                            <>
+                              <ChevronUp className="size-3" /> Show less
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
+            </div>
+          )}
         {showActionRow && (
           <div className="flex items-center gap-1 px-1">
             {showRelaySynthesize && otherProvider && (
@@ -189,9 +220,7 @@ export function Message({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {relaySynthDisabled
-                      ? disabledReason
-                      : `Ask ${otherLabel} to synthesize`}
+                    {relaySynthDisabled ? disabledReason : `Ask ${otherLabel} to synthesize`}
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
@@ -222,11 +251,7 @@ export function Message({
                   aria-label="Copy message"
                   onClick={() => void handleCopy()}
                 >
-                  {copied ? (
-                    <Check className="size-3.5" />
-                  ) : (
-                    <Copy className="size-3.5" />
-                  )}
+                  {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{copied ? 'Copied' : 'Copy as markdown'}</TooltipContent>

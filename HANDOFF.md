@@ -1,6 +1,6 @@
 # ai4me — session handoff
 
-A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.** **Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) is complete and verified at build + smoke.**
+A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.** **Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) is complete and verified at build + smoke.** **Phase 12 (short cross-model turns + collapsed debate + live debate tracker) is complete and verified at build + smoke + seeded-thread browser check.**
 
 ## How to resume
 
@@ -53,7 +53,7 @@ These were settled by interview in the prior session. Don't re-ask.
 - Theme: light / dark / system, persisted.
 - Voice input: rely on iOS keyboard dictation. No custom voice.
 
-## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–11 complete
+## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–12 complete
 
 ### Phase 1 (scaffold) — verified
 - `npm run build` passes
@@ -217,6 +217,29 @@ snapshot + copy-thread show the new captions.
 - `models.ts` is the single place to bump model IDs or add a tier. The Settings Select and the composer both read from it.
 - `modelLabel` is prefix-based (`claude-fable*`, `claude-opus*`, `grok*`), so dated model IDs (e.g. `claude-opus-5-20260401`) label correctly without code changes.
 
+### Phase 12 (short cross-model turns + collapsed debate + live debate tracker) — 2026-09-12
+
+Problem: each model answered with 300–400+ words, so a 3-round debate was ~8 essays plus verbatim prompt bubbles — unreadable. Fix at the prompt (the real lever) and in the UI, and keep the debate watchable while it runs.
+
+- `src/lib/prompts.ts` — new. The four cross-model prompt builders moved here from `thread.ts` (pure, smoke-testable). `debateOpenPrompt` / `debateReplyPrompt` append `DEBATE_TURN_RULES` (under 150 words, one-sentence verdict first, ≤3 bullets, no restating). `synthesizePrompt` caps at ~200 words; `debateSynthesisPrompt` has a soft ~300-word cap (the synthesis is the deliverable). `lengthInstruction(replyLength)` + `composeSystemPrompt(userPrompt, replyLength)` join the user's system prompt with a length instruction; returns `''` when both are empty so providers keep omitting `system`.
+- `src/lib/storage/db.ts` — `ReplyLength = 'concise' | 'standard' | 'detailed'`; `replyLength` on `SettingsRow`, default `'standard'` (= today's behaviour). Additive, merged at read, no schema bump.
+- `src/state/settings.ts` — `replyLength` in state / hydrate / defaults.
+- `src/state/thread.ts` — `runStream` sends `composeSystemPrompt(settings.systemPrompt, settings.replyLength)`. New `debate: DebateState | null` (`startIndex`, `turn`, `total`, `target`, `phase: 'exchange' | 'synthesis'`) set by `debateMessage` at the top of each iteration and cleared in `finally` / `cancel` / `clear` / `loadFromSnapshot`. `isDebating` is unchanged.
+- `src/components/Settings/SettingsDialog.tsx` — Behavior → "Reply length" Select (Concise / Standard / Detailed), helper "Applies to every turn. Debate exchanges are always kept short."
+- `src/lib/messageText.ts` — helpers: `isDebateTurn(messages, i)` (assistant reply whose previous message is a `debate` prompt; synthesis replies are not turns), `isDebatePrompt(m)`, `shouldCollapseDebateTurn(messages, i)` (fold only once a *later* assistant message has text — the turn being read stays open through the next model's connect/thinking gap), `firstParagraph(text)`, `firstSentence(text)` (strips headings/bullets/`**Verdict:**` labels).
+- `src/components/Chat/Message.tsx` — `collapsed` prop. Foldable turns render `firstParagraph` + "Show more" / "Show less" (user toggle overrides the prop; streaming turns always render in full). Debate prompt bubbles (`debate` / `debate-synthesis` origins) render only their caption plus a "show prompt" link — the boilerplate and the verbatim source copy are hidden; the action row is hidden with them. Relay/synthesize prompt bubbles unchanged. Copy still copies the full text. `ThinkingBlock` gets `autoOpen={showCursor && !text}`.
+- `src/components/Chat/ThinkingBlock.tsx` — `autoOpen` prop: open while true, folds when text starts; a manual click takes over. Body capped at `max-h-64` with scroll.
+- `src/components/Chat/MessageList.tsx`, `src/components/Snapshots/SnapshotsDialog.tsx` — pass `collapsed={shouldCollapseDebateTurn(list, i)}`.
+- `src/components/Chat/DebateTracker.tsx` — new strip between the list and the composer while `debate` is set: header `⚔ Debate · round N of M · Grok challenging Claude` (or `✦ Closing synthesis · Fable`) with step dots; live status derived from the streaming message (`reading…` → `thinking…` → `writing…`); one headline per completed turn (`Grok: <first sentence>`) — with verdict-first prompts this reads as a live scoreboard. On a synthesis-completed end it shows `✦ Debate finished · N exchanges` for 4 s; Stop/error hide it at once. Mounted in `ChatView`.
+- `scripts/prompts-smoke.ts` — new (registered in `npm run smoke`): system-prompt composition, prompt rule presence/absence, `firstParagraph` / `firstSentence`, debate-turn detection and the fold rule (streaming placeholder never folds; last finished turn stays open while the next is empty).
+- `.claude/launch.json` — `relay-dev` (npm run dev, port 5173) for the desktop-app browser pane.
+
+**Verified:** `npm run build`; `npm run smoke` (77 cases); browser with a seeded 8-message debate thread in IndexedDB — debate turns folded to their verdict line with Show more, prompt bubbles reduced to captions with show prompt, conclusion fully open, Settings shows Reply length. The tracker strip and prompt-length effect need real keys (manual): start a debate → strip shows round dots + reading/thinking/writing, thinking streams live in the empty bubble, each exchange is ≤ ~150 words and its verdict appears as a headline, a finished turn folds only when the next reply starts, "Debate finished" flashes at the end; Reply length → Concise shortens normal replies.
+
+**Notes for the next phase:**
+- Headlines are only as good as the verdict-first instruction; if a model ignores it, `firstSentence` still returns its first sentence.
+- Possible follow-ups: fold a whole debate into one card showing only the synthesis; provider colour-coding on bubbles; a `max_tokens` cap on xAI requests (none today).
+
 ## Phase 9 — remaining manual steps (Ilias, at your Mac)
 
 These need a physical iPhone, Xcode, and CocoaPods — out of scope for the AI session.
@@ -284,6 +307,7 @@ ai4me/
 │   ├── components/
 │   │   ├── Chat/
 │   │   │   ├── ChatView.tsx
+│   │   │   ├── DebateTracker.tsx  ← live debate strip (rounds, status, headlines)
 │   │   │   ├── Message.tsx
 │   │   │   ├── MessageList.tsx
 │   │   │   ├── PromptBar.tsx
@@ -312,6 +336,7 @@ ai4me/
 │   │   ├── markdown.tsx       ← react-markdown + remark-gfm wrapper
 │   │   ├── messageText.ts     ← textOf(message) helper, shared
 │   │   ├── models.ts          ← curated model IDs + labels (Fable / Opus / Grok 4.6)
+│   │   ├── prompts.ts         ← cross-model prompt builders + reply-length system prompt
 │   │   ├── sse.ts             ← parseSSEStream() async generator
 │   │   ├── theme.ts           ← applyTheme() / watchSystemTheme()
 │   │   ├── threadMarkdown.ts  ← messageToMarkdown / threadToMarkdown helpers
@@ -326,6 +351,7 @@ ai4me/
 │   ├── sse-smoke.ts           ← parseSSEStream cases
 │   ├── providers-smoke.ts     ← streamAnthropic / streamXai event mapping + request shapes
 │   ├── export-smoke.ts        ← briefing / filename / model-label cases
+│   ├── prompts-smoke.ts       ← prompt rules, system-prompt composition, fold rule
 │   └── make-app-icon.py       ← generates the iOS AppIcon PNG
 ├── tsconfig.json              ← paths only, no baseUrl
 ├── tsconfig.app.json          ← paths only, no baseUrl

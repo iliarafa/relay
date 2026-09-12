@@ -10,10 +10,28 @@ import { db } from '@/lib/storage/db'
 import { useSettings } from '@/state/settings'
 import { ProviderError, streamProvider, type ProviderMessage } from '@/lib/providers'
 import { textOf } from '@/lib/messageText'
+import {
+  composeSystemPrompt,
+  debateOpenPrompt,
+  debateReplyPrompt,
+  debateSynthesisPrompt,
+  synthesizePrompt,
+} from '@/lib/prompts'
 
 export interface SendOptions {
   images?: Array<{ mediaType: string; data: string }>
   webSearch?: boolean
+}
+
+export interface DebateState {
+  /** Index in `messages` where this debate's turns begin. */
+  startIndex: number
+  /** 0-based exchange index; equals `total` during the closing synthesis. */
+  turn: number
+  /** Number of exchanges (not counting the synthesis). */
+  total: number
+  target: ProviderId
+  phase: 'exchange' | 'synthesis'
 }
 
 export interface ThreadState {
@@ -22,6 +40,7 @@ export interface ThreadState {
   currentModel: ProviderId
   isStreaming: boolean
   isDebating: boolean
+  debate: DebateState | null
   streamingMessageId: string | null
   errorMessage: string | null
 
@@ -126,22 +145,6 @@ function providerLabel(p: ProviderId): string {
   return p === 'claude' ? 'Claude' : 'Grok'
 }
 
-function synthesizePrompt(from: ProviderId, body: string): string {
-  return `Here is what ${providerLabel(from)} said. Critique and synthesize:\n\n${body}`
-}
-
-function debateOpenPrompt(from: ProviderId, body: string): string {
-  return `Here is what ${providerLabel(from)} said. Challenge it: find weaknesses, correct errors, and add what's missing. Be substantive, not polite.\n\n${body}`
-}
-
-function debateReplyPrompt(from: ProviderId): string {
-  return `Respond to ${providerLabel(from)}'s critique above: defend what holds up, concede what doesn't, and improve the answer.`
-}
-
-function debateSynthesisPrompt(): string {
-  return 'The debate is over. Write your final, best answer to the original question, incorporating the valid points raised on both sides.'
-}
-
 export const useThread = create<ThreadState>((set, get) => {
   async function runStream(params: {
     provider: ProviderId
@@ -168,7 +171,7 @@ export const useThread = create<ThreadState>((set, get) => {
       for await (const evt of streamProvider(provider, {
         apiKey,
         model,
-        systemPrompt: settings.systemPrompt,
+        systemPrompt: composeSystemPrompt(settings.systemPrompt, settings.replyLength),
         thinkingEnabled: settings.thinkingOn,
         webSearchEnabled: webSearch,
         messages: requestMessages,
@@ -242,6 +245,7 @@ export const useThread = create<ThreadState>((set, get) => {
     currentModel: 'claude',
     isStreaming: false,
     isDebating: false,
+    debate: null,
     streamingMessageId: null,
     errorMessage: null,
 
@@ -437,7 +441,18 @@ export const useThread = create<ThreadState>((set, get) => {
       const sourceProvider = source.provider
       const otherProvider: ProviderId = sourceProvider === 'claude' ? 'grok' : 'claude'
 
-      set({ isDebating: true, errorMessage: null })
+      const startIndex = get().messages.length
+      set({
+        isDebating: true,
+        errorMessage: null,
+        debate: {
+          startIndex,
+          turn: 0,
+          total: rounds,
+          target: otherProvider,
+          phase: 'exchange',
+        },
+      })
       try {
         // Turns 0..rounds-1 are exchanges (alternating, starting with the other
         // model); turn === rounds is the closing synthesis by the original model.
@@ -448,6 +463,15 @@ export const useThread = create<ThreadState>((set, get) => {
             : turn % 2 === 0
               ? otherProvider
               : sourceProvider
+          set({
+            debate: {
+              startIndex,
+              turn,
+              total: rounds,
+              target,
+              phase: isSynthesis ? 'synthesis' : 'exchange',
+            },
+          })
           const respondingTo: ProviderId = target === 'claude' ? 'grok' : 'claude'
           const { apiKey, model } = getKeyAndModel(target)
 
@@ -503,7 +527,7 @@ export const useThread = create<ThreadState>((set, get) => {
           if (!get().isDebating || get().errorMessage) break
         }
       } finally {
-        set({ isDebating: false })
+        set({ isDebating: false, debate: null })
       }
     },
 
@@ -518,6 +542,7 @@ export const useThread = create<ThreadState>((set, get) => {
         messages: cloned,
         isStreaming: false,
         isDebating: false,
+        debate: null,
         streamingMessageId: null,
         errorMessage: null,
       })
@@ -525,7 +550,7 @@ export const useThread = create<ThreadState>((set, get) => {
     },
 
     cancel() {
-      set({ isDebating: false })
+      set({ isDebating: false, debate: null })
       abortController?.abort()
     },
 
@@ -535,6 +560,7 @@ export const useThread = create<ThreadState>((set, get) => {
         messages: [],
         isStreaming: false,
         isDebating: false,
+        debate: null,
         streamingMessageId: null,
         errorMessage: null,
       })

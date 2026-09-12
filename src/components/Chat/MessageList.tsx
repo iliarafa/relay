@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useThread } from '@/state/thread'
 import { useSettings } from '@/state/settings'
+import { shouldCollapseDebateTurn } from '@/lib/messageText'
 import { Message } from './Message'
 
 export function MessageList() {
@@ -47,8 +48,13 @@ export function MessageList() {
             )}
           </div>
         ) : (
-          messages.map((m) => (
-            <Message key={m.id} message={m} streaming={m.id === streamingId} />
+          messages.map((m, i) => (
+            <Message
+              key={m.id}
+              message={m}
+              streaming={m.id === streamingId}
+              collapsed={shouldCollapseDebateTurn(messages, i)}
+            />
           ))
         )}
         {errorMessage && (

@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type ProviderId = 'claude' | 'grok'
+export type ReplyLength = 'concise' | 'standard' | 'detailed'
 
 export type ContentBlock =
   | { type: 'text'; text: string }
@@ -14,6 +15,7 @@ export interface SettingsRow {
   systemPrompt: string
   thinkingOn: boolean
   debateRounds: number
+  replyLength: ReplyLength
   fontScale: number
   theme: Theme
   lastUsedModel: ProviderId
@@ -67,6 +69,7 @@ export const SETTINGS_DEFAULTS: SettingsRow = {
   systemPrompt: '',
   thinkingOn: true,
   debateRounds: 3,
+  replyLength: 'standard',
   fontScale: 1,
   theme: 'system',
   lastUsedModel: 'claude',
