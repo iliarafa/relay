@@ -3,16 +3,27 @@ import { ArrowUp, Globe, Paperclip, Square, X } from 'lucide-react'
 import { Capacitor } from '@capacitor/core'
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
 import { useThread } from '@/state/thread'
 import { useSettings } from '@/state/settings'
-import type { ProviderId } from '@/lib/storage/db'
+import {
+  CLAUDE_FABLE_ID,
+  CLAUDE_OPUS_ID,
+  composerFromState,
+  type ComposerModel,
+} from '@/lib/models'
 
 interface AttachedImage {
   id: string
@@ -50,53 +61,6 @@ async function fileToImage(file: File): Promise<AttachedImage> {
   })
 }
 
-function ModelToggle({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: ProviderId
-  onChange: (m: ProviderId) => void
-  disabled?: boolean
-}) {
-  const opts: Array<{ id: ProviderId; label: string }> = [
-    { id: 'claude', label: 'Claude' },
-    { id: 'grok', label: 'Grok' },
-  ]
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Model"
-      className={cn(
-        'inline-flex items-center rounded-md border bg-card p-0.5 text-sm',
-        disabled && 'opacity-60',
-      )}
-    >
-      {opts.map((o) => {
-        const active = value === o.id
-        return (
-          <button
-            key={o.id}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            disabled={disabled}
-            onClick={() => onChange(o.id)}
-            className={cn(
-              'px-3 py-1 rounded-sm transition-colors',
-              active
-                ? 'bg-accent text-accent-foreground'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {o.label}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 export function PromptBar() {
   const [text, setText] = useState('')
   const [images, setImages] = useState<AttachedImage[]>([])
@@ -113,7 +77,23 @@ export function PromptBar() {
 
   const anthropicKey = useSettings((s) => s.anthropicKey)
   const xaiKey = useSettings((s) => s.xaiKey)
+  const claudeModel = useSettings((s) => s.claudeModel)
+  const composer = composerFromState(currentModel, claudeModel)
   const hasKey = currentModel === 'claude' ? !!anthropicKey : !!xaiKey
+
+  function setComposer(choice: ComposerModel) {
+    if (choice === 'grok') {
+      setCurrentModel('grok')
+      return
+    }
+    setCurrentModel('claude')
+    const next = choice === 'fable' ? CLAUDE_FABLE_ID : CLAUDE_OPUS_ID
+    if (useSettings.getState().claudeModel !== next) {
+      void useSettings.getState().updateSettings({ claudeModel: next })
+    }
+  }
+
+  const composerLabel = composer === 'fable' ? 'Fable' : composer === 'opus' ? 'Opus' : 'Grok'
 
   const busy = isStreaming || isDebating
 
@@ -222,8 +202,8 @@ export function PromptBar() {
           onKeyDown={onKeyDown}
           placeholder={
             hasKey
-              ? `Message ${currentModel === 'claude' ? 'Claude' : 'Grok'}…  (⌘↵ to send)`
-              : `Add an ${currentModel === 'claude' ? 'Anthropic' : 'xAI'} API key in Settings to use ${currentModel === 'claude' ? 'Claude' : 'Grok'}.`
+              ? `Message ${composerLabel}…  (⌘↵ to send)`
+              : `Add an ${composer === 'grok' ? 'xAI' : 'Anthropic'} API key in Settings to use ${composerLabel}.`
           }
           rows={2}
           className="resize-none max-h-40"
@@ -277,11 +257,20 @@ export function PromptBar() {
                 {webSearch ? 'Web search on' : 'Web search off'}
               </TooltipContent>
             </Tooltip>
-            <ModelToggle
-              value={currentModel}
-              onChange={setCurrentModel}
+            <Select
+              value={composer}
+              onValueChange={(v) => setComposer(v as ComposerModel)}
               disabled={busy}
-            />
+            >
+              <SelectTrigger size="sm" aria-label="Model" className="min-w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fable">Fable</SelectItem>
+                <SelectItem value="opus">Opus</SelectItem>
+                <SelectItem value="grok">Grok 4.6</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {busy ? (
             <Button onClick={cancel} variant="outline" size="sm">

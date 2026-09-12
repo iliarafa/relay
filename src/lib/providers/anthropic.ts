@@ -1,4 +1,5 @@
 import { parseSSEStream } from '@/lib/sse'
+import { isFableModel } from '@/lib/models'
 import {
   ANTHROPIC_MAX_TOKENS,
   ProviderError,
@@ -46,11 +47,13 @@ export function buildAnthropicRequest(req: StreamRequest): AnthropicRequestBody 
   if (req.systemPrompt && req.systemPrompt.trim()) {
     body.system = req.systemPrompt
   }
-  // display: 'summarized' is required — the API default omits thinking text,
-  // which would leave the ▸ Thinking expander permanently empty.
-  body.thinking = req.thinkingEnabled
-    ? { type: 'adaptive', display: 'summarized' }
-    : { type: 'disabled' }
+  // Fable always thinks adaptively — thinking: disabled (and budget thinking)
+  // return 400. Opus still accepts adaptive / disabled.
+  if (!isFableModel(req.model)) {
+    body.thinking = req.thinkingEnabled
+      ? { type: 'adaptive', display: 'summarized' }
+      : { type: 'disabled' }
+  }
   if (req.webSearchEnabled) {
     body.tools = [{ type: 'web_search_20260209', name: 'web_search' }]
   }

@@ -23,6 +23,12 @@ import { Separator } from '@/components/ui/separator'
 import { Slider } from '@/components/ui/slider'
 import { useSettings } from '@/state/settings'
 import { applyFontScale } from '@/lib/theme'
+import {
+  CLAUDE_FABLE_ID,
+  CLAUDE_MODELS,
+  GROK_46_ID,
+  GROK_MODELS,
+} from '@/lib/models'
 import type { Theme } from '@/lib/storage/db'
 
 interface Props {
@@ -74,8 +80,8 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
         settings.setApiKey('anthropic', anthropicKey),
         settings.setApiKey('xai', xaiKey),
         settings.updateSettings({
-          claudeModel: claudeModel.trim() || 'claude-opus-5',
-          grokModel: grokModel.trim() || 'grok-4-latest',
+          claudeModel: claudeModel.trim() || CLAUDE_FABLE_ID,
+          grokModel: grokModel.trim() || GROK_46_ID,
           systemPrompt,
           thinkingOn,
           debateRounds:
@@ -139,24 +145,41 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
           <section className="grid gap-3">
             <h3 className="text-sm font-medium text-muted-foreground">Models</h3>
             <div className="grid gap-2">
-              <Label htmlFor="claude-model">Claude model ID</Label>
-              <Input
-                id="claude-model"
-                spellCheck={false}
-                value={claudeModel}
-                onChange={(e) => setClaudeModel(e.target.value)}
-                placeholder="claude-opus-5"
-              />
+              <Label htmlFor="claude-model">Claude</Label>
+              <Select value={claudeModel} onValueChange={setClaudeModel}>
+                <SelectTrigger id="claude-model" className="w-full">
+                  <SelectValue placeholder="Choose a Claude model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLAUDE_MODELS.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                  {claudeModel &&
+                    !CLAUDE_MODELS.some((m) => m.id === claudeModel) && (
+                      <SelectItem value={claudeModel}>{claudeModel}</SelectItem>
+                    )}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="grok-model">Grok model ID</Label>
-              <Input
-                id="grok-model"
-                spellCheck={false}
-                value={grokModel}
-                onChange={(e) => setGrokModel(e.target.value)}
-                placeholder="grok-4-latest"
-              />
+              <Label htmlFor="grok-model">Grok</Label>
+              <Select value={grokModel} onValueChange={setGrokModel}>
+                <SelectTrigger id="grok-model" className="w-full">
+                  <SelectValue placeholder="Choose a Grok model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GROK_MODELS.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                  {grokModel && !GROK_MODELS.some((m) => m.id === grokModel) && (
+                    <SelectItem value={grokModel}>{grokModel}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </section>
 
@@ -177,10 +200,10 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
             <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
               <div className="grid gap-0.5">
                 <Label htmlFor="thinking-on" className="cursor-pointer">
-                  Extended thinking (Claude)
+                  Extended thinking (Opus)
                 </Label>
                 <span className="text-xs text-muted-foreground">
-                  Claude thinks adaptively before answering.
+                  Opus thinks adaptively when on. Fable always thinks.
                 </span>
               </div>
               <Switch id="thinking-on" checked={thinkingOn} onCheckedChange={setThinkingOn} />

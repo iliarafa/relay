@@ -4,6 +4,7 @@ import {
   buildBriefingHtml,
   exportFilename,
 } from '@/lib/export/briefing'
+import { composerFromState, modelLabel } from '@/lib/models'
 
 function eq(label: string, got: unknown, want: unknown) {
   const a = JSON.stringify(got)
@@ -43,6 +44,13 @@ function msg(partial: Partial<ThreadMessage> & Pick<ThreadMessage, 'role' | 'con
 }
 
 const now = new Date(2026, 7, 31, 16, 0, 0)
+
+eq('composer fable', composerFromState('claude', 'claude-fable-5'), 'fable')
+eq('composer opus', composerFromState('claude', 'claude-opus-5'), 'opus')
+eq('composer grok', composerFromState('grok', 'claude-fable-5'), 'grok')
+eq('label fable', modelLabel('claude-fable-5', 'claude'), 'Fable')
+eq('label opus', modelLabel('claude-opus-5', 'claude'), 'Opus')
+eq('label legacy claude', modelLabel(undefined, 'claude'), 'Claude')
 
 eq('filename md', exportFilename(now, 'md'), 'relay-2026-08-31.md')
 eq('filename html', exportFilename(now, 'html'), 'relay-2026-08-31.html')

@@ -1,4 +1,5 @@
 import { marked } from 'marked'
+import { modelLabel } from '@/lib/models'
 import type { ProviderId, ThreadMessage } from '@/lib/storage/db'
 import { textOf } from '@/lib/messageText'
 
@@ -72,7 +73,7 @@ ${sections}
 }
 
 function renderSection(m: ThreadMessage): string {
-  const speaker = m.role === 'user' ? 'You' : speakerLabel(m.provider)
+  const speaker = m.role === 'user' ? 'You' : speakerLabel(m.provider, m.model)
   const origin = m.origin ? originCaption(m.origin) : ''
   const imgs = imageNote(m)
   const body = textOf(m)
@@ -87,10 +88,8 @@ ${parts.join('\n')}
 </section>`
 }
 
-function speakerLabel(provider?: ProviderId): string {
-  if (provider === 'claude') return 'Claude'
-  if (provider === 'grok') return 'Grok'
-  return 'Assistant'
+function speakerLabel(provider?: ProviderId, model?: string): string {
+  return modelLabel(model, provider) || 'Assistant'
 }
 
 function originCaption(origin: NonNullable<ThreadMessage['origin']>): string {

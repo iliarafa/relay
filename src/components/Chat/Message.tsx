@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { Markdown } from '@/lib/markdown'
 import { textOf } from '@/lib/messageText'
 import { messageToMarkdown } from '@/lib/threadMarkdown'
+import { modelLabel } from '@/lib/models'
 import type { ProviderId, ThreadMessage } from '@/lib/storage/db'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,10 +16,8 @@ import { useThread } from '@/state/thread'
 import { useSettings } from '@/state/settings'
 import { ThinkingBlock } from './ThinkingBlock'
 
-function providerLabel(provider?: ProviderId): string {
-  if (provider === 'claude') return 'Claude'
-  if (provider === 'grok') return 'Grok'
-  return ''
+function providerLabel(provider?: ProviderId, model?: string): string {
+  return modelLabel(model, provider)
 }
 
 function originCaption(origin: NonNullable<ThreadMessage['origin']>): string {
@@ -105,7 +104,7 @@ export function Message({
       >
         {!isUser && message.provider && (
           <span className="text-xs text-muted-foreground px-1">
-            {providerLabel(message.provider)}
+            {providerLabel(message.provider, message.model)}
           </span>
         )}
         {isUser && message.origin && (

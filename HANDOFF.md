@@ -1,6 +1,6 @@
 # ai4me — session handoff
 
-A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.**
+A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.** **Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) is complete and verified at build + smoke.**
 
 ## How to resume
 
@@ -36,15 +36,15 @@ These were settled by interview in the prior session. Don't re-ask.
 
 ### Models
 - **Best only**, one per provider. Latest Claude flagship (Opus tier) + latest Grok flagship.
-- No model menu beyond "Claude vs Grok."
-- Exact model IDs are editable strings in Settings (so versions can be bumped without a rebuild).
+- No model menu beyond "Claude vs Grok." *(Superseded in Phase 11: the composer offers Fable / Opus / Grok 4.6 — two Claude tiers, one Grok.)*
+- Exact model IDs are editable strings in Settings (so versions can be bumped without a rebuild). *(Phase 11 turned these into Selects over the curated list in `src/lib/models.ts`; an unknown stored ID still appears as an extra option, so nothing is lost on upgrade.)*
 - Default on a fresh thread: last-used model preselected.
 
 ### Features (v1)
 - **System prompt:** single global default, editable in Settings, **ships empty**. Sent as the `system` field on both providers. Empty = no system prompt sent (no vendor fallback exists at the API layer).
 - **Vision (v1):** image attach button on the prompt bar. Web: file picker. iOS: camera + photo library via Capacitor. Encoded as base64 / data URI for both providers.
 - **Web search (v1):** per-message toggle. When on, Claude requests include the `web_search` tool; Grok requests enable Live Search. Off by default.
-- **Extended thinking (Claude, v1):** Settings toggle (default on); when on, Claude requests use adaptive thinking (`{ type: 'adaptive', display: 'summarized' }`); thinking blocks render as a collapsed `▸ Thinking` expander.
+- **Extended thinking (Claude, v1):** Settings toggle (default on); when on, Opus requests use adaptive thinking (`{ type: 'adaptive', display: 'summarized' }`); thinking blocks render as a collapsed `▸ Thinking` expander. Fable always thinks — the toggle does not apply to it (Phase 11).
 
 ### Polish defaults
 - Streaming for both providers (SSE).
@@ -53,7 +53,7 @@ These were settled by interview in the prior session. Don't re-ask.
 - Theme: light / dark / system, persisted.
 - Voice input: rely on iOS keyboard dictation. No custom voice.
 
-## Current state — Phases 1, 2, 3, 4, 5, 6, 7, 8 complete; Phase 9 partially complete (code in place, native bringup pending); Phase 10 complete
+## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–11 complete
 
 ### Phase 1 (scaffold) — verified
 - `npm run build` passes
@@ -73,7 +73,7 @@ These were settled by interview in the prior session. Don't re-ask.
 
 **Defaults shipped (editable in UI):**
 - `claudeModel: 'claude-opus-4-7'`
-- `grokModel: 'grok-4-latest'`
+- `grokModel: 'grok-4-latest'` (now `grok-4.6`, see Phase 11)
 - `thinkingOn: true`, `thinkingBudget: 8000`
 - `systemPrompt: ''`, `theme: 'system'`, `lastUsedModel: 'claude'`
 
@@ -102,7 +102,7 @@ Notes:
 - `src/components/Chat/Message.tsx` — role-aware bubble, "Claude"/"Grok" provider label above assistant bubbles, blinking cursor while streaming, plain text for user messages, markdown for assistant.
 - `src/components/Chat/ThinkingBlock.tsx` — collapsed `▸ Thinking` / `▸ Thinking…` expander; phase 7 will only need to ensure thinking data flows in (it already does — Claude streams it).
 - `src/components/Chat/MessageList.tsx` — flex-1 scroll container, sticky-to-bottom autoscroll that respects when the user scrolls up (>100px from bottom disables stick), inline destructive-styled error toast with dismiss action.
-- `src/components/Chat/PromptBar.tsx` — Textarea + segmented Claude/Grok toggle (`role="radiogroup"`), Send/Stop button. Cmd+Enter submits. Per-provider key check disables Send and adapts placeholder copy.
+- `src/components/Chat/PromptBar.tsx` — Textarea + segmented Claude/Grok toggle (`role="radiogroup"`; replaced by a three-way Select in Phase 11), Send/Stop button. Cmd+Enter submits. Per-provider key check disables Send and adapts placeholder copy.
 - `src/components/Chat/ChatView.tsx` — vertical layout wrapper.
 - `src/App.tsx` — hydrates settings then thread (sequential — thread reads `lastUsedModel`). Shows trash icon in header only when thread has messages, with `confirm()` guard. Reuses theme application from phase 2.
 
@@ -200,6 +200,23 @@ text + thinking stream (proves the API fix); start a debate from a Claude answer
 critiques, alternation runs, Claude synthesizes; Stop mid-debate keeps completed turns;
 snapshot + copy-thread show the new captions.
 
+### Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) — 2026-09-12
+
+- `src/lib/models.ts` — new. Curated model list and helpers: `CLAUDE_MODELS` (`claude-fable-5` → "Fable", `claude-opus-5` → "Opus"), `GROK_MODELS` (`grok-4.6` → "Grok 4.6"), `isFableModel(id)`, `composerFromState(provider, claudeModel)` → `'fable' | 'opus' | 'grok'`, `modelIdForComposer`, and `modelLabel(model, provider)` (falls back to "Claude"/"Grok" for legacy messages with no `model`).
+- `src/components/Chat/PromptBar.tsx` — the Claude/Grok segmented toggle is replaced by a shadcn `Select` with three options. Fable and Opus both set `currentModel = 'claude'` and write `claudeModel` to settings; Grok sets `currentModel = 'grok'`. Placeholder copy uses the composer label.
+- `src/components/Settings/SettingsDialog.tsx` — Claude and Grok model fields are now Selects over the curated lists; a stored ID that isn't in the list is shown as an extra option so custom/legacy values survive. Empty-value fallbacks are `CLAUDE_FABLE_ID` / `GROK_46_ID`. Thinking toggle relabelled "Extended thinking (Opus)" with the note that Fable always thinks.
+- `src/lib/storage/db.ts` — `ThreadMessage.model?: string` (additive, no schema bump). Defaults moved to `claudeModel: 'claude-fable-5'`, `grokModel: 'grok-4.6'`. `loadSettings()` maps a stored `grok-4-latest` forward to `grok-4.6` at read time (same pattern as the existing `claude-opus-4-7` → `claude-opus-5` mapping).
+- `src/state/thread.ts` — every assistant placeholder (send / relay / synthesize / debate) records `model` so labels are stable even after the settings default changes.
+- `src/lib/providers/anthropic.ts` — `buildAnthropicRequest` omits the `thinking` field entirely for Fable models: Fable rejects both `{ type: 'disabled' }` and budget thinking with 400, and thinks adaptively on its own. Opus keeps the Phase 10 adaptive/disabled behaviour.
+- `src/components/Chat/Message.tsx`, `src/lib/threadMarkdown.ts`, `src/lib/export/briefing.ts` — speaker labels come from `modelLabel(model, provider)`, so bubbles, copied markdown, and the HTML/PDF briefing say "Fable" / "Opus" / "Grok" (legacy messages without `model` still say "Claude" / "Grok").
+- `scripts/providers-smoke.ts` — two new assertions: Fable request has no `thinking` field whether the toggle is on or off. `scripts/export-smoke.ts` — six new assertions for `composerFromState` and `modelLabel`.
+
+**Verified:** `npm run build` passes. `npm run smoke` passes (SSE + providers + export). Real-key check is manual: send with Fable selected → streams with a thinking block and no 400; switch to Opus → toggle thinking off → still streams; bubble labels read Fable / Opus / Grok.
+
+**Notes for the next phase:**
+- `models.ts` is the single place to bump model IDs or add a tier. The Settings Select and the composer both read from it.
+- `modelLabel` is prefix-based (`claude-fable*`, `claude-opus*`, `grok*`), so dated model IDs (e.g. `claude-opus-5-20260401`) label correctly without code changes.
+
 ## Phase 9 — remaining manual steps (Ilias, at your Mac)
 
 These need a physical iPhone, Xcode, and CocoaPods — out of scope for the AI session.
@@ -271,6 +288,8 @@ ai4me/
 │   │   │   ├── MessageList.tsx
 │   │   │   ├── PromptBar.tsx
 │   │   │   └── ThinkingBlock.tsx
+│   │   ├── Export/
+│   │   │   └── ExportMenu.tsx  ← copy / .md / .html / .pdf dropdown (header)
 │   │   ├── Settings/
 │   │   │   └── SettingsDialog.tsx
 │   │   ├── Snapshots/
@@ -279,6 +298,9 @@ ai4me/
 │   │   └── ui/                ← shadcn components (don't edit unless intentional)
 │   ├── index.css              ← tailwind import + nova theme vars
 │   ├── lib/
+│   │   ├── export/
+│   │   │   ├── briefing.ts    ← HTML briefing builder (marked)
+│   │   │   └── download.ts    ← blob download + PDF via html2canvas/jspdf
 │   │   ├── providers/
 │   │   │   ├── anthropic.ts   ← Messages API streaming
 │   │   │   ├── xai.ts         ← OpenAI-shape streaming
@@ -289,6 +311,7 @@ ai4me/
 │   │   │   └── keys.ts        ← swappable secret store
 │   │   ├── markdown.tsx       ← react-markdown + remark-gfm wrapper
 │   │   ├── messageText.ts     ← textOf(message) helper, shared
+│   │   ├── models.ts          ← curated model IDs + labels (Fable / Opus / Grok 4.6)
 │   │   ├── sse.ts             ← parseSSEStream() async generator
 │   │   ├── theme.ts           ← applyTheme() / watchSystemTheme()
 │   │   ├── threadMarkdown.ts  ← messageToMarkdown / threadToMarkdown helpers
@@ -301,7 +324,9 @@ ai4me/
 ├── scripts/
 │   ├── alias-loader.mjs       ← Node ESM hook for @/ + relative imports (smoke tests only)
 │   ├── sse-smoke.ts           ← parseSSEStream cases
-│   └── providers-smoke.ts     ← streamAnthropic / streamXai event mapping
+│   ├── providers-smoke.ts     ← streamAnthropic / streamXai event mapping + request shapes
+│   ├── export-smoke.ts        ← briefing / filename / model-label cases
+│   └── make-app-icon.py       ← generates the iOS AppIcon PNG
 ├── tsconfig.json              ← paths only, no baseUrl
 ├── tsconfig.app.json          ← paths only, no baseUrl
 ├── tsconfig.node.json

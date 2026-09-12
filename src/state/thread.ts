@@ -301,6 +301,7 @@ export const useThread = create<ThreadState>((set, get) => {
         id: newId(),
         role: 'assistant',
         provider,
+        model,
         content: [],
         createdAt: now + 1,
       }
@@ -346,6 +347,7 @@ export const useThread = create<ThreadState>((set, get) => {
         id: newId(),
         role: 'assistant',
         provider: otherProvider,
+        model,
         content: [],
         createdAt: now + 1,
       }
@@ -393,6 +395,7 @@ export const useThread = create<ThreadState>((set, get) => {
         id: newId(),
         role: 'assistant',
         provider: otherProvider,
+        model,
         content: [],
         createdAt: now + 1,
       }
@@ -469,6 +472,7 @@ export const useThread = create<ThreadState>((set, get) => {
             id: newId(),
             role: 'assistant',
             provider: target,
+            model,
             content: [],
             createdAt: now + 1,
           }

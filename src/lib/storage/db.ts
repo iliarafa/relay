@@ -25,6 +25,7 @@ export interface ThreadMessage {
   provider?: ProviderId
   content: ContentBlock[]
   thinking?: string
+  model?: string
   origin?: { kind: 'relay' | 'synthesize' | 'debate' | 'debate-synthesis'; from: ProviderId }
   createdAt: number
 }
@@ -61,8 +62,8 @@ db.version(1).stores({
 
 export const SETTINGS_DEFAULTS: SettingsRow = {
   id: 1,
-  claudeModel: 'claude-opus-5',
-  grokModel: 'grok-4-latest',
+  claudeModel: 'claude-fable-5',
+  grokModel: 'grok-4.6',
   systemPrompt: '',
   thinkingOn: true,
   debateRounds: 3,
@@ -80,6 +81,9 @@ export async function loadSettings(): Promise<SettingsRow> {
   // model strings are untouched. Read-time only; next Save persists it.
   if (merged.claudeModel === 'claude-opus-4-7') {
     merged.claudeModel = 'claude-opus-5'
+  }
+  if (merged.grokModel === 'grok-4-latest') {
+    merged.grokModel = 'grok-4.6'
   }
   return merged
 }

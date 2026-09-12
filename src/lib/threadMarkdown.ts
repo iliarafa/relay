@@ -1,10 +1,9 @@
+import { modelLabel } from '@/lib/models'
 import type { ProviderId, ThreadMessage } from '@/lib/storage/db'
 import { textOf } from '@/lib/messageText'
 
-function providerLabel(p?: ProviderId): string {
-  if (p === 'claude') return 'Claude'
-  if (p === 'grok') return 'Grok'
-  return ''
+function providerLabel(p?: ProviderId, model?: string): string {
+  return modelLabel(model, p)
 }
 
 function originLine(origin: NonNullable<ThreadMessage['origin']>): string {
@@ -35,7 +34,7 @@ export function threadToMarkdown(messages: ThreadMessage[]): string {
   const blocks: string[] = []
   for (const m of messages) {
     const heading =
-      m.role === 'user' ? '**You:**' : `**${providerLabel(m.provider) || 'Assistant'}:**`
+      m.role === 'user' ? '**You:**' : `**${providerLabel(m.provider, m.model) || 'Assistant'}:**`
     const body = messageToMarkdown(m)
     blocks.push(body ? `${heading}\n\n${body}` : heading)
   }

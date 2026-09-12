@@ -161,6 +161,22 @@ async function run() {
     eq('anthropic request: web search tool', searchBody.tools, [
       { type: 'web_search_20260209', name: 'web_search' },
     ])
+
+    const fableOn = buildAnthropicRequest({
+      apiKey: 'k',
+      model: 'claude-fable-5',
+      messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+      thinkingEnabled: true,
+    })
+    eq('fable request: no thinking field', fableOn.thinking, undefined)
+
+    const fableOff = buildAnthropicRequest({
+      apiKey: 'k',
+      model: 'claude-fable-5',
+      messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
+      thinkingEnabled: false,
+    })
+    eq('fable request: thinking omitted when off', fableOff.thinking, undefined)
   }
 
   // Anthropic: error response
