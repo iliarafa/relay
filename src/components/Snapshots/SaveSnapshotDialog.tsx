@@ -59,7 +59,7 @@ export function SaveSnapshotDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Save snapshot</DialogTitle>
+          <DialogTitle className="label text-foreground">Save snapshot</DialogTitle>
           <DialogDescription>
             Archives the current thread under a name. The rolling thread keeps going.
           </DialogDescription>

@@ -1,6 +1,6 @@
 # ai4me — session handoff
 
-A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.** **Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) is complete and verified at build + smoke.** **Phase 12 (short cross-model turns + collapsed debate + live debate tracker) is complete and verified at build + smoke + seeded-thread browser check.** **Phase 13 (Synthesize merges both views when both models have spoken) is complete and verified at build + smoke.**
+A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.** **Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) is complete and verified at build + smoke.** **Phase 12 (short cross-model turns + collapsed debate + live debate tracker) is complete and verified at build + smoke + seeded-thread browser check.** **Phase 13 (Synthesize merges both views when both models have spoken) is complete and verified at build + smoke.** **Phase 14 (cover-aligned restyle: black, heavy wordmark, tracked caps, hairlines) is complete and verified at build + smoke + seeded-thread browser check.**
 
 ## How to resume
 
@@ -18,7 +18,7 @@ These were settled by interview in the prior session. Don't re-ask.
 - **Pure client-side, no backend.** API keys stored on-device (localStorage on web; Capacitor Preferences on iOS). Keys never leave the device. Per-device key entry, no cross-device sync — accepted.
 
 ### Stack
-- React 19 + Vite 8 + TypeScript + Tailwind v4 + shadcn/ui (Radix + Nova preset, Geist font).
+- React 19 + Vite 8 + TypeScript + Tailwind v4 + shadcn/ui (Radix, Geist font). Since Phase 14 the theme is the site cover's: pure black / near-white, grey tracked-caps micro-labels, 1px hairlines, 2px radius; light is the exact inversion.
 - Zustand for global state. Dexie for IndexedDB.
 - Hand-rolled `fetch` + SSE parsing for both providers — no vendor SDKs.
 - Capacitor wrap is phase 9 (iOS later). Web app must be fully usable standalone first.
@@ -53,7 +53,7 @@ These were settled by interview in the prior session. Don't re-ask.
 - Theme: light / dark / system, persisted.
 - Voice input: rely on iOS keyboard dictation. No custom voice.
 
-## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–13 complete
+## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–14 complete
 
 ### Phase 1 (scaffold) — verified
 - `npm run build` passes
@@ -253,6 +253,23 @@ Problem: each model answered with 300–400+ words, so a 3-round debate was ~8 e
 - Smoke: `prompts-smoke.ts` covers `mergePrompt` content and `lastSpokenBody`; `export-smoke.ts` checks the merge caption in the briefing.
 
 **Verified:** `npm run build` + `npm run smoke`. Manual with real keys: ask a question → Claude answers → Relay to Grok → on Grok's bubble the Sparkles tooltip says "Merge with Fable: best of both" → click → caption `✦ merging with Grok`, reply opens with where they agree/differ and gives one merged answer. On a thread where only Grok has spoken, the tooltip and behaviour are the old critique path.
+
+### Phase 14 (cover-aligned restyle) — 2026-09-12
+
+The app now matches the site's cover page for Relay (black, heavy `RELAY`, thin grey tracked-caps labels, hairline rule, square outlined button, sparse static stars). Skin only — no behaviour, state, export, or smoke-logic changes. An earlier "psychedelic / iridescent / motion" direction was tried the same day, rejected by Ilias, and fully reverted before commit; don't reintroduce colour or ambient motion.
+
+- `src/index.css` — palette: dark = `#000` / `#f2f2f2` / labels `#8c8c8c` / hairlines `rgba(255,255,255,.14)`; light = exact inversion. `--muted` is transparent (assistant boxes are hairline-only), `--primary` is a 6%/4% tint (user boxes), `--radius` is 2px. `body::before` paints nine static 1px stars (`--star`). New `.label` utility: 11px, `letter-spacing .22em`, uppercase, weight 400, grey. Base weights: body 300, `strong` 500, headings 400.
+- `src/App.tsx` — wordmark `RELAY` (800, tight tracking); shell is `relative z-10` over the stars; header padding widened.
+- `src/components/Chat/Message.tsx` — boxes are `rounded-[2px] border`; assistant transparent, user `bg-primary`. Model name, origin captions, show/hide prompt, Show more/less use `.label`. Chat captions lost their glyphs (`debating Grok`, `debate conclusion`, …) — **exports keep them** (`threadMarkdown.ts`, `briefing.ts` untouched; export-smoke asserts them). Caret is a 1px bar.
+- `src/components/Chat/PromptBar.tsx` — borderless textarea; Send/Stop are `variant="outline"` with `.label` text and a 50% foreground border; Select trigger uses `.label`.
+- `src/components/Chat/DebateTracker.tsx`, `ThinkingBlock.tsx`, `MessageList.tsx` — `.label` on headers/status/toggles; tracker dots are squares (filled done, outlined pending, pulsing active); empty-state title is a label.
+- `src/lib/markdown.tsx` — 15px / 1.7 / 300; strong 500; headings 400; 2px radii.
+- `src/components/ui/button.tsx` — `default` variant is now an outlined hairline (transparent, `border-border`, hover `bg-accent`); `font-medium` → `font-normal`. `dialog.tsx` / `select.tsx` / `dropdown-menu.tsx` — solid `bg-popover`, `ring-border`, no shadow; dialog radius 2px, overlay 40% black.
+- Settings / Snapshots dialogs — titles and section `h3`s use `.label`.
+
+**Verified:** `npm run build`; `npm run smoke` (87); seeded 8-message debate thread in the browser pane — dark and light, desktop and 375px (no horizontal scroll); Settings dialog. Contrast: `#f2f2f2`/`#000` and `#0a0a0a`/`#fff` ≫ 4.5:1; labels `#8c8c8c`/`#000` ≈ 5.9:1.
+
+**Notes:** the `.label` class is the one knob for the micro-type; change tracking/size there. If the stars ever read as dirt on a particular display, drop `body::before`.
 
 ## Phase 9 — remaining manual steps (Ilias, at your Mac)
 

@@ -16,13 +16,15 @@ function providerLabel(provider?: ProviderId, model?: string): string {
   return modelLabel(model, provider)
 }
 
+// Chat captions are plain words set as tracked caps (the .label class);
+// exports keep their glyph versions in threadMarkdown.ts / briefing.ts.
 function originCaption(origin: NonNullable<ThreadMessage['origin']>): string {
   const fromLabel = providerLabel(origin.from)
-  if (origin.kind === 'relay') return `↻ relayed from ${fromLabel}`
-  if (origin.kind === 'debate') return `⚔ debating ${fromLabel}`
-  if (origin.kind === 'debate-synthesis') return '✦ debate conclusion'
-  if (origin.kind === 'merge') return `✦ merging with ${fromLabel}`
-  return `✦ synthesizing ${fromLabel}`
+  if (origin.kind === 'relay') return `relayed from ${fromLabel}`
+  if (origin.kind === 'debate') return `debating ${fromLabel}`
+  if (origin.kind === 'debate-synthesis') return 'debate conclusion'
+  if (origin.kind === 'merge') return `merging with ${fromLabel}`
+  return `synthesizing ${fromLabel}`
 }
 
 export function Message({
@@ -119,18 +121,16 @@ export function Message({
         className={cn('flex flex-col gap-1.5 max-w-[85%]', isUser ? 'items-end' : 'items-start')}
       >
         {!isUser && message.provider && (
-          <span className="text-xs text-muted-foreground px-1">
-            {providerLabel(message.provider, message.model)}
-          </span>
+          <span className="label px-0.5">{providerLabel(message.provider, message.model)}</span>
         )}
         {isUser && message.origin && (
-          <span className="text-xs text-muted-foreground px-1 inline-flex items-center gap-2">
+          <span className="label px-0.5 inline-flex items-center gap-3">
             {originCaption(message.origin)}
             {debatePrompt && (
               <button
                 type="button"
                 onClick={() => setShowPrompt((v) => !v)}
-                className="underline underline-offset-2 opacity-70 hover:opacity-100"
+                className="label border-b border-border hover:text-foreground hover:border-foreground transition-colors"
               >
                 {showPrompt ? 'hide prompt' : 'show prompt'}
               </button>
@@ -138,7 +138,7 @@ export function Message({
           </span>
         )}
         {message.thinking && (
-          <div className={cn('px-1', isUser && 'text-right')}>
+          <div className={cn('px-0.5', isUser && 'text-right')}>
             <ThinkingBlock
               text={message.thinking}
               streaming={showCursor && !text}
@@ -150,8 +150,8 @@ export function Message({
           (text || images.length > 0 || !message.thinking || !showCursor) && (
             <div
               className={cn(
-                'rounded-2xl px-4 py-2.5 flex flex-col gap-2',
-                isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
+                'rounded-[2px] border px-3.5 py-2.5 flex flex-col gap-2',
+                isUser ? 'bg-primary text-primary-foreground' : 'bg-transparent text-foreground',
               )}
             >
               {images.length > 0 && (
@@ -161,7 +161,7 @@ export function Message({
                       key={i}
                       src={`data:${img.mediaType};base64,${img.data}`}
                       alt=""
-                      className="rounded-md max-h-48 max-w-full object-cover"
+                      className="rounded-[2px] max-h-48 max-w-full object-cover"
                     />
                   ))}
                 </div>
@@ -171,19 +171,21 @@ export function Message({
                   (message.origin ? (
                     <Markdown text={text} />
                   ) : (
-                    <p className="text-sm whitespace-pre-wrap break-words">{text}</p>
+                    <p className="text-[15px] leading-[1.7] font-light whitespace-pre-wrap break-words">
+                      {text}
+                    </p>
                   ))
                 : (text || showCursor) && (
                     <div>
                       <Markdown text={isCollapsed ? preview : text} />
                       {showCursor && (
-                        <span className="inline-block w-2 h-3.5 align-text-bottom bg-current opacity-60 animate-pulse ml-0.5" />
+                        <span className="inline-block w-px h-[1.1em] align-text-bottom bg-current animate-pulse ml-0.5" />
                       )}
                       {foldable && (
                         <button
                           type="button"
                           onClick={() => setUserToggle(isCollapsed)}
-                          className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                          className="label mt-1.5 inline-flex items-center gap-1 hover:text-foreground transition-colors"
                         >
                           {isCollapsed ? (
                             <>
@@ -201,7 +203,7 @@ export function Message({
             </div>
           )}
         {showActionRow && (
-          <div className="flex items-center gap-1 px-1">
+          <div className="flex items-center gap-1 px-0">
             {showRelaySynthesize && otherProvider && (
               <>
                 <Tooltip>

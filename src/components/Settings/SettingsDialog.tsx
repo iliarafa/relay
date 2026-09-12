@@ -108,7 +108,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85dvh] max-w-lg grid-rows-[auto_minmax(0,1fr)_auto]">
         <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle className="label text-foreground">Settings</DialogTitle>
           <DialogDescription>
             API keys stay on this device. Models, prompt, and preferences persist locally.
           </DialogDescription>
@@ -116,7 +116,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
 
         <div className="grid gap-5 overflow-y-auto py-2">
           <section className="grid gap-3">
-            <h3 className="text-sm font-medium text-muted-foreground">API keys</h3>
+            <h3 className="label">API keys</h3>
             <div className="grid gap-2">
               <Label htmlFor="anthropic-key">Anthropic API key</Label>
               <Input
@@ -146,7 +146,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
           <Separator />
 
           <section className="grid gap-3">
-            <h3 className="text-sm font-medium text-muted-foreground">Models</h3>
+            <h3 className="label">Models</h3>
             <div className="grid gap-2">
               <Label htmlFor="claude-model">Claude</Label>
               <Select value={claudeModel} onValueChange={setClaudeModel}>
@@ -189,7 +189,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
           <Separator />
 
           <section className="grid gap-3">
-            <h3 className="text-sm font-medium text-muted-foreground">Behavior</h3>
+            <h3 className="label">Behavior</h3>
             <div className="grid gap-2">
               <Label htmlFor="system-prompt">System prompt</Label>
               <Textarea
@@ -216,7 +216,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
                 Applies to every turn. Debate exchanges are always kept short.
               </span>
             </div>
-            <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
+            <div className="flex items-center justify-between gap-4 rounded-[2px] border px-3 py-2">
               <div className="grid gap-0.5">
                 <Label htmlFor="thinking-on" className="cursor-pointer">
                   Extended thinking (Opus)
@@ -247,7 +247,7 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
           <Separator />
 
           <section className="grid gap-3">
-            <h3 className="text-sm font-medium text-muted-foreground">Appearance</h3>
+            <h3 className="label">Appearance</h3>
             <div className="grid gap-2">
               <Label htmlFor="theme">Theme</Label>
               <Select value={theme} onValueChange={(v) => setTheme(v as Theme)}>

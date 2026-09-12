@@ -95,7 +95,7 @@ export function SnapshotsDialog({ open, onOpenChange }: Props) {
                 <ArrowLeft className="size-4" />
               </Button>
             )}
-            <DialogTitle className="flex-1 truncate">
+            <DialogTitle className="label text-foreground flex-1 truncate">
               {selected ? selected.name : 'Snapshots'}
             </DialogTitle>
           </div>
@@ -142,7 +142,7 @@ export function SnapshotsDialog({ open, onOpenChange }: Props) {
                     className="flex-1 text-left"
                     onClick={() => setSelectedId(s.id)}
                   >
-                    <div className="text-sm font-medium truncate">{s.name}</div>
+                    <div className="text-sm truncate">{s.name}</div>
                     <div className="text-xs text-muted-foreground">
                       {relativeTime(s.createdAt)} · {s.messages.length} message
                       {s.messages.length === 1 ? '' : 's'}

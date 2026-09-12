@@ -170,13 +170,13 @@ export function PromptBar() {
 
   return (
     <div className="shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)]">
-      <div className="max-w-3xl mx-auto px-4 py-3 flex flex-col gap-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
+      <div className="max-w-3xl mx-auto px-5 py-3 flex flex-col gap-2 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))]">
         {images.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {images.map((img) => (
               <div
                 key={img.id}
-                className="relative h-16 w-16 rounded-md overflow-hidden border bg-muted"
+                className="relative h-16 w-16 rounded-[2px] overflow-hidden border"
               >
                 <img
                   src={img.preview}
@@ -206,7 +206,7 @@ export function PromptBar() {
               : `Add an ${composer === 'grok' ? 'xAI' : 'Anthropic'} API key in Settings to use ${composerLabel}.`
           }
           rows={2}
-          className="resize-none max-h-40"
+          className="resize-none max-h-40 border-0 bg-transparent dark:bg-transparent shadow-none focus-visible:ring-0 px-0.5 text-[15px] font-light leading-[1.7] placeholder:text-muted-foreground/70"
         />
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
@@ -262,7 +262,7 @@ export function PromptBar() {
               onValueChange={(v) => setComposer(v as ComposerModel)}
               disabled={busy}
             >
-              <SelectTrigger size="sm" aria-label="Model" className="min-w-28">
+              <SelectTrigger size="sm" aria-label="Model" className="label min-w-28 rounded-[2px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -273,12 +273,23 @@ export function PromptBar() {
             </Select>
           </div>
           {busy ? (
-            <Button onClick={cancel} variant="outline" size="sm">
-              <Square className="size-3.5" /> Stop
+            <Button
+              onClick={cancel}
+              variant="outline"
+              size="sm"
+              className="label text-foreground border-foreground/50 rounded-[2px] px-4"
+            >
+              <Square className="size-3" /> Stop
             </Button>
           ) : (
-            <Button onClick={submit} disabled={!canSend} size="sm">
-              <ArrowUp className="size-4" /> Send
+            <Button
+              onClick={submit}
+              disabled={!canSend}
+              variant="outline"
+              size="sm"
+              className="label text-foreground border-foreground/50 rounded-[2px] px-4"
+            >
+              <ArrowUp className="size-3.5" /> Send
             </Button>
           )}
         </div>

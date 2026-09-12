@@ -37,10 +37,10 @@ export function MessageList() {
 
   return (
     <div ref={ref} className="flex-1 overflow-y-auto">
-      <div className="max-w-3xl mx-auto px-4 py-8 flex flex-col gap-6">
+      <div className="max-w-3xl mx-auto px-5 py-8 flex flex-col gap-7">
         {empty ? (
           <div className="text-center text-muted-foreground py-16">
-            <p className="text-base">Start a conversation</p>
+            <p className="label">Start a conversation</p>
             {noKeys ? (
               <p className="text-sm mt-2">Open Settings (top-right) to add your API keys.</p>
             ) : (
@@ -60,7 +60,7 @@ export function MessageList() {
         {errorMessage && (
           <div
             role="alert"
-            className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive flex items-start justify-between gap-2"
+            className="rounded-[2px] border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive flex items-start justify-between gap-2"
           >
             <span className="flex-1">{errorMessage}</span>
             <button

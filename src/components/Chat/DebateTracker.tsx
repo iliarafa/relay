@@ -40,8 +40,8 @@ export function DebateTracker() {
   if (!debate && finished) {
     return (
       <Shell>
-        <p className="text-xs text-muted-foreground">
-          ✦ Debate finished · {finished.total} exchange{finished.total === 1 ? '' : 's'}
+        <p className="label">
+          Debate finished · {finished.total} exchange{finished.total === 1 ? '' : 's'}
         </p>
       </Shell>
     )
@@ -62,8 +62,8 @@ export function DebateTracker() {
 
   const header =
     debate.phase === 'synthesis'
-      ? `✦ Closing synthesis · ${target}`
-      : `⚔ Debate · round ${debate.turn + 1} of ${debate.total} · ${target} ${
+      ? `Closing synthesis · ${target}`
+      : `Debate · round ${debate.turn + 1} of ${debate.total} · ${target} ${
           debate.turn === 0 ? 'challenging' : 'answering'
         } ${other}`
 
@@ -81,32 +81,32 @@ export function DebateTracker() {
   return (
     <Shell>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-medium truncate">{header}</p>
+        <p className="label text-foreground truncate">{header}</p>
         <div className="flex items-center gap-1 shrink-0" aria-hidden="true">
           {Array.from({ length: steps }, (_, i) => (
             <span
               key={i}
               className={cn(
-                'size-1.5 rounded-full',
+                'size-[5px]',
                 i < debate.turn
                   ? 'bg-foreground'
                   : i === debate.turn
                     ? 'bg-foreground animate-pulse'
-                    : 'bg-muted-foreground/30',
-                i === steps - 1 && 'size-2',
+                    : 'border border-muted-foreground',
+                i === steps - 1 && 'size-[7px]',
               )}
             />
           ))}
         </div>
       </div>
-      <p className="text-xs text-muted-foreground" aria-live="polite">
+      <p className="label" aria-live="polite">
         {status}
       </p>
       {headlines.length > 0 && (
-        <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground border-t pt-1.5 mt-0.5">
+        <ul className="flex flex-col gap-0.5 text-[13px] font-light text-muted-foreground border-t pt-1.5 mt-0.5">
           {headlines.map((h) => (
             <li key={h.id} className="truncate">
-              <span className="text-foreground/80 font-medium">{h.who}:</span> {h.line}
+              <span className="label text-foreground mr-1">{h.who}</span> {h.line}
             </li>
           ))}
         </ul>
@@ -117,8 +117,8 @@ export function DebateTracker() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="shrink-0 border-t bg-muted/40">
-      <div className="max-w-3xl mx-auto px-4 py-2 flex flex-col gap-1 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
+    <div className="shrink-0 border-t bg-background">
+      <div className="max-w-3xl mx-auto px-5 py-2.5 flex flex-col gap-1.5 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))]">
         {children}
       </div>
     </div>

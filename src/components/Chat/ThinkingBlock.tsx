@@ -16,11 +16,11 @@ export function ThinkingBlock({
   const open = manual ?? !!autoOpen
 
   return (
-    <div className="text-xs text-muted-foreground">
+    <div className="label">
       <button
         type="button"
         onClick={() => setManual(!open)}
-        className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+        className="label inline-flex items-center gap-1 hover:text-foreground transition-colors"
       >
         <ChevronRight
           className={`size-3 transition-transform ${open ? 'rotate-90' : ''}`}
@@ -28,7 +28,7 @@ export function ThinkingBlock({
         <span>{streaming ? 'Thinking…' : 'Thinking'}</span>
       </button>
       {open && (
-        <div className="mt-1 ml-4 pl-3 border-l border-border whitespace-pre-wrap max-h-64 overflow-y-auto">
+        <div className="mt-1.5 ml-4 pl-3 border-l border-border whitespace-pre-wrap max-h-64 overflow-y-auto text-[13px] leading-relaxed normal-case tracking-normal font-light text-muted-foreground">
           {text}
         </div>
       )}

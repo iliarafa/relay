@@ -60,9 +60,9 @@ function App() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="bg-background text-foreground h-dvh flex flex-col overflow-hidden">
-        <header className="flex items-center justify-between px-4 py-2 border-b shrink-0 pt-[max(0.5rem,env(safe-area-inset-top))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
-          <h1 className="text-base font-medium">Relay</h1>
+      <div className="relative z-10 text-foreground h-dvh flex flex-col overflow-hidden">
+        <header className="flex items-center justify-between px-5 py-3 border-b shrink-0 pt-[max(0.75rem,env(safe-area-inset-top))] pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))]">
+          <h1 className="text-[15px] font-extrabold tracking-[-0.02em] select-none">RELAY</h1>
           <div className="flex items-center gap-1">
             {hasMessages && (
               <>
