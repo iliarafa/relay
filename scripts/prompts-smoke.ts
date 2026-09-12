@@ -6,6 +6,7 @@ import {
   debateReplyPrompt,
   debateSynthesisPrompt,
   lengthInstruction,
+  mergePrompt,
   synthesizePrompt,
 } from '@/lib/prompts'
 import {
@@ -13,6 +14,7 @@ import {
   firstSentence,
   isDebatePrompt,
   isDebateTurn,
+  lastSpokenBody,
   shouldCollapseDebateTurn,
 } from '@/lib/messageText'
 
@@ -63,6 +65,12 @@ lacks('synthesis is not capped at 150', debateSynthesisPrompt(), '150 words')
 has('synthesis has soft cap', debateSynthesisPrompt(), '300 words')
 has('synthesize carries body', synthesizePrompt('grok', body), body)
 has('synthesize is capped', synthesizePrompt('grok', body), '200 words')
+const merged = mergePrompt('grok', 'Grok view.', 'claude', 'Claude view.')
+has('merge quotes the other model', merged, 'Grok said:\n\nGrok view.')
+has('merge quotes own earlier answer', merged, 'you (Claude) said earlier:\n\nClaude view.')
+has('merge asks for best of both', merged, 'best of both')
+has('merge is capped', merged, '250 words')
+lacks('merge does not use the critique framing', merged, 'Critique and synthesize')
 
 // --- text helpers
 eq('firstParagraph single', firstParagraph('Just one paragraph.'), {
@@ -104,6 +112,10 @@ const thread: ThreadMessage[] = [
   msg({ role: 'assistant', provider: 'claude' }),
 ]
 eq('first message is not a debate turn', isDebateTurn(thread, 0), false)
+eq('lastSpokenBody: claude spoke before grok turn', lastSpokenBody(thread, 'claude', 3), 'body')
+eq('lastSpokenBody: grok has not spoken before claude turn', lastSpokenBody(thread, 'grok', 1), null)
+eq('lastSpokenBody: skips empty placeholder', lastSpokenBody(thread.slice(0, 6), 'claude', 6), 'body')
+eq('lastSpokenBody: nothing before index 0', lastSpokenBody(thread, 'claude', 0), null)
 eq('plain answer is not a debate turn', isDebateTurn(thread, 1), false)
 eq('reply to debate prompt is a debate turn', isDebateTurn(thread, 3), true)
 eq('synthesis reply is not a debate turn', isDebateTurn(thread, 7), false)

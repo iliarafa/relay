@@ -28,7 +28,10 @@ export interface ThreadMessage {
   content: ContentBlock[]
   thinking?: string
   model?: string
-  origin?: { kind: 'relay' | 'synthesize' | 'debate' | 'debate-synthesis'; from: ProviderId }
+  origin?: {
+    kind: 'relay' | 'synthesize' | 'merge' | 'debate' | 'debate-synthesis'
+    from: ProviderId
+  }
   createdAt: number
 }
 

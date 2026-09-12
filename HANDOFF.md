@@ -1,6 +1,6 @@
 # ai4me — session handoff
 
-A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.** **Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) is complete and verified at build + smoke.** **Phase 12 (short cross-model turns + collapsed debate + live debate tracker) is complete and verified at build + smoke + seeded-thread browser check.**
+A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.** **Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) is complete and verified at build + smoke.** **Phase 12 (short cross-model turns + collapsed debate + live debate tracker) is complete and verified at build + smoke + seeded-thread browser check.** **Phase 13 (Synthesize merges both views when both models have spoken) is complete and verified at build + smoke.**
 
 ## How to resume
 
@@ -53,7 +53,7 @@ These were settled by interview in the prior session. Don't re-ask.
 - Theme: light / dark / system, persisted.
 - Voice input: rely on iOS keyboard dictation. No custom voice.
 
-## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–12 complete
+## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–13 complete
 
 ### Phase 1 (scaffold) — verified
 - `npm run build` passes
@@ -239,6 +239,20 @@ Problem: each model answered with 300–400+ words, so a 3-round debate was ~8 e
 **Notes for the next phase:**
 - Headlines are only as good as the verdict-first instruction; if a model ignores it, `firstSentence` still returns its first sentence.
 - Possible follow-ups: fold a whole debate into one card showing only the synthesis; provider colour-coding on bubbles; a `max_tokens` cap on xAI requests (none today).
+
+### Phase 13 (Synthesize = best of both when both models have spoken) — 2026-09-12
+
+"Synthesize" on a single-source thread was really "critique and improve". Now, when the model being asked has already answered earlier in the thread, the button merges both views instead.
+
+- `src/lib/prompts.ts` — `mergePrompt(from, fromBody, self, selfBody)` + `MERGE_RULES`: quotes the other model's answer and the responder's own most recent answer, asks for one sentence on agreement/difference, then the single best answer (keep the strongest points from each, resolve disagreements explicitly, drop what doesn't hold up); under ~250 words. `synthesizePrompt` (critique + improve) is unchanged and still used when only one model has spoken.
+- `src/lib/messageText.ts` — `lastSpokenBody(messages, provider, before)`: body of that provider's most recent non-empty assistant turn before an index, or `null`.
+- `src/state/thread.ts` — `synthesizeMessage` picks `mergePrompt` + origin kind `merge` when `lastSpokenBody(all, otherProvider, sourceIdx)` is non-null, else the old path with origin `synthesize`.
+- `src/lib/storage/db.ts` — origin kind union gains `'merge'` (additive).
+- Captions: `✦ merging with Grok` in `Message.tsx`, `_✦ merging with Grok_` in `threadMarkdown.ts`, and the HTML briefing.
+- `src/components/Chat/Message.tsx` — Sparkles button label/tooltip reads `Merge with Fable: best of both` when both have spoken, else `Ask Fable to synthesize` (selector via `lastSpokenBody`).
+- Smoke: `prompts-smoke.ts` covers `mergePrompt` content and `lastSpokenBody`; `export-smoke.ts` checks the merge caption in the briefing.
+
+**Verified:** `npm run build` + `npm run smoke`. Manual with real keys: ask a question → Claude answers → Relay to Grok → on Grok's bubble the Sparkles tooltip says "Merge with Fable: best of both" → click → caption `✦ merging with Grok`, reply opens with where they agree/differ and gives one merged answer. On a thread where only Grok has spoken, the tooltip and behaviour are the old critique path.
 
 ## Phase 9 — remaining manual steps (Ilias, at your Mac)
 

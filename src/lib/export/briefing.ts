@@ -97,6 +97,7 @@ function originCaption(origin: NonNullable<ThreadMessage['origin']>): string {
   if (origin.kind === 'relay') return `↻ relayed from ${from}`
   if (origin.kind === 'debate') return `⚔ debating ${from}`
   if (origin.kind === 'debate-synthesis') return '✦ debate conclusion'
+  if (origin.kind === 'merge') return `✦ merging with ${from}`
   return `✦ synthesizing ${from}`
 }
 

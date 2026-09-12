@@ -116,6 +116,11 @@ lacks('no raw script tag from user', html, '<script>alert(1)</script>')
 has('image note', html, '1 image attached')
 has('origin caption', html, 'relayed from Grok')
 has('debate caption', html, 'debating Claude')
+const mergeHtml = buildBriefingHtml(
+  [msg({ role: 'user', origin: { kind: 'merge', from: 'grok' }, content: [{ type: 'text', text: 'Merge the two.' }] })],
+  { now },
+)
+has('merge caption', mergeHtml, 'merging with Grok')
 has('markdown heading', html, '<h2>')
 has('markdown list', html, '<li>')
 has('finding text', html, 'Plan A is cheaper')

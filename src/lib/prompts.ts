@@ -12,11 +12,24 @@ export const DEBATE_TURN_RULES =
 export const SYNTHESIZE_RULES =
   'Keep it under 200 words. Open with a one-sentence verdict, then give the improved answer.'
 
+export const MERGE_RULES =
+  'Keep it under 250 words. Open with one sentence on where the two answers agree and where they differ. Then give the single best answer: keep the strongest points from each, resolve the disagreements explicitly, and drop what does not hold up.'
+
 export const DEBATE_SYNTHESIS_RULES =
   'Be complete but tight — roughly 300 words unless the question genuinely needs more.'
 
 export function synthesizePrompt(from: ProviderId, body: string): string {
   return `Here is what ${providerLabel(from)} said. Critique and synthesize. ${SYNTHESIZE_RULES}\n\n${body}`
+}
+
+/** Both models have answered: ask the responder to merge its own view with the other's. */
+export function mergePrompt(
+  from: ProviderId,
+  fromBody: string,
+  self: ProviderId,
+  selfBody: string,
+): string {
+  return `Here is what ${providerLabel(from)} said:\n\n${fromBody}\n\nAnd here is what you (${providerLabel(self)}) said earlier:\n\n${selfBody}\n\nMerge the two into the best of both. ${MERGE_RULES}`
 }
 
 export function debateOpenPrompt(from: ProviderId, body: string): string {

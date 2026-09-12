@@ -9,12 +9,13 @@ import {
 import { db } from '@/lib/storage/db'
 import { useSettings } from '@/state/settings'
 import { ProviderError, streamProvider, type ProviderMessage } from '@/lib/providers'
-import { textOf } from '@/lib/messageText'
+import { lastSpokenBody, textOf } from '@/lib/messageText'
 import {
   composeSystemPrompt,
   debateOpenPrompt,
   debateReplyPrompt,
   debateSynthesisPrompt,
+  mergePrompt,
   synthesizePrompt,
 } from '@/lib/prompts'
 
@@ -375,7 +376,9 @@ export const useThread = create<ThreadState>((set, get) => {
 
     async synthesizeMessage(id) {
       if (get().isStreaming || get().isDebating) return
-      const source = get().messages.find((m) => m.id === id)
+      const all = get().messages
+      const sourceIdx = all.findIndex((m) => m.id === id)
+      const source = sourceIdx === -1 ? undefined : all[sourceIdx]
       if (!source || source.role !== 'assistant' || !source.provider) return
       const body = textOf(source)
       if (!body) return
@@ -387,12 +390,18 @@ export const useThread = create<ThreadState>((set, get) => {
         return
       }
 
+      // Both models have spoken → merge their views. Otherwise critique + improve.
+      const selfBody = lastSpokenBody(all, otherProvider, sourceIdx)
+      const promptText = selfBody
+        ? mergePrompt(source.provider, body, otherProvider, selfBody)
+        : synthesizePrompt(source.provider, body)
+
       const now = Date.now()
       const userMsg: ThreadMessage = {
         id: newId(),
         role: 'user',
-        content: [{ type: 'text', text: synthesizePrompt(source.provider, body) }],
-        origin: { kind: 'synthesize', from: source.provider },
+        content: [{ type: 'text', text: promptText }],
+        origin: { kind: selfBody ? 'merge' : 'synthesize', from: source.provider },
         createdAt: now,
       }
       const assistantMsg: ThreadMessage = {

@@ -63,3 +63,24 @@ export function shouldCollapseDebateTurn(messages: ThreadMessage[], i: number): 
   }
   return false
 }
+
+/**
+ * Body of the most recent assistant turn by `provider` before index `before`,
+ * or null if that model has not spoken yet. Used to decide whether Synthesize
+ * can merge both models' views.
+ */
+export function lastSpokenBody(
+  messages: ThreadMessage[],
+  provider: ThreadMessage['provider'],
+  before: number,
+): string | null {
+  const end = before < 0 ? messages.length : Math.min(before, messages.length)
+  for (let i = end - 1; i >= 0; i--) {
+    const m = messages[i]
+    if (m.role === 'assistant' && m.provider === provider) {
+      const body = textOf(m)
+      if (body) return body
+    }
+  }
+  return null
+}

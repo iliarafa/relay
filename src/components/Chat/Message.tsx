@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ArrowRightLeft, Check, ChevronDown, ChevronUp, Copy, Sparkles, Swords } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Markdown } from '@/lib/markdown'
-import { firstParagraph, isDebatePrompt, textOf } from '@/lib/messageText'
+import { firstParagraph, isDebatePrompt, lastSpokenBody, textOf } from '@/lib/messageText'
 import { messageToMarkdown } from '@/lib/threadMarkdown'
 import { modelLabel } from '@/lib/models'
 import type { ProviderId, ThreadMessage } from '@/lib/storage/db'
@@ -21,6 +21,7 @@ function originCaption(origin: NonNullable<ThreadMessage['origin']>): string {
   if (origin.kind === 'relay') return `↻ relayed from ${fromLabel}`
   if (origin.kind === 'debate') return `⚔ debating ${fromLabel}`
   if (origin.kind === 'debate-synthesis') return '✦ debate conclusion'
+  if (origin.kind === 'merge') return `✦ merging with ${fromLabel}`
   return `✦ synthesizing ${fromLabel}`
 }
 
@@ -58,6 +59,14 @@ export function Message({
   const debateRounds = useSettings((s) => s.debateRounds)
   const anthropicKey = useSettings((s) => s.anthropicKey)
   const xaiKey = useSettings((s) => s.xaiKey)
+  // Has the model we'd ask already answered earlier in the thread? Then
+  // Synthesize merges both views instead of critiquing one.
+  const bothSpoken = useThread((s) => {
+    if (isUser || !message.provider) return false
+    const other: ProviderId = message.provider === 'claude' ? 'grok' : 'claude'
+    const idx = s.messages.findIndex((m) => m.id === message.id)
+    return lastSpokenBody(s.messages, other, idx) !== null
+  })
 
   const [copied, setCopied] = useState(false)
 
@@ -82,6 +91,10 @@ export function Message({
     : !otherKey
       ? `Add a ${otherLabel} API key in Settings`
       : ''
+
+  const synthesizeLabel = bothSpoken
+    ? `Merge with ${otherLabel}: best of both`
+    : `Ask ${otherLabel} to synthesize`
 
   const debateDisabled = busy || !anthropicKey || !xaiKey
   const debateDisabledReason = busy
@@ -212,7 +225,7 @@ export function Message({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      aria-label={`Ask ${otherLabel} to synthesize`}
+                      aria-label={synthesizeLabel}
                       disabled={relaySynthDisabled}
                       onClick={() => void synthesizeMessage(message.id)}
                     >
@@ -220,7 +233,7 @@ export function Message({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {relaySynthDisabled ? disabledReason : `Ask ${otherLabel} to synthesize`}
+                    {relaySynthDisabled ? disabledReason : synthesizeLabel}
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>
