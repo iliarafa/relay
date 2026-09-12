@@ -1,6 +1,6 @@
 # ai4me — session handoff
 
-A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.** **Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) is complete and verified at build + smoke.** **Phase 12 (short cross-model turns + collapsed debate + live debate tracker) is complete and verified at build + smoke + seeded-thread browser check.** **Phase 13 (Synthesize merges both views when both models have spoken) is complete and verified at build + smoke.** **Phase 14 (cover-aligned restyle: black, heavy wordmark, tracked caps, hairlines) is complete and verified at build + smoke + seeded-thread browser check.**
+A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.** **Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) is complete and verified at build + smoke.** **Phase 12 (short cross-model turns + collapsed debate + live debate tracker) is complete and verified at build + smoke + seeded-thread browser check.** **Phase 13 (Synthesize merges both views when both models have spoken) is complete and verified at build + smoke.** **Phase 14 (cover-aligned restyle: black, heavy wordmark, tracked caps, hairlines) is complete and verified at build + smoke + seeded-thread browser check.** **Phase 15 (API key fields: masked chip + live validity check) is complete and verified at build + smoke + browser.**
 
 ## How to resume
 
@@ -53,7 +53,7 @@ These were settled by interview in the prior session. Don't re-ask.
 - Theme: light / dark / system, persisted.
 - Voice input: rely on iOS keyboard dictation. No custom voice.
 
-## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–14 complete
+## Current state — Phases 1–8 complete; Phase 9 partially complete (code in place, native bringup pending); Phases 10–15 complete
 
 ### Phase 1 (scaffold) — verified
 - `npm run build` passes
@@ -271,6 +271,18 @@ The app now matches the site's cover page for Relay (black, heavy `RELAY`, thin 
 
 **Notes:** the `.label` class is the one knob for the micro-type; change tracking/size there. If the stars ever read as dirt on a particular display, drop `body::before`.
 
+### Phase 15 (API key fields: masked chip + live "valid key" check) — 2026-09-12
+
+The Settings key inputs were wide password fields that filled with dozens of dots. Now each key is a narrow prefix-hinted input that collapses into a masked chip with a live verdict.
+
+- `src/lib/apiKeys.ts` — `KeyProvider`, `KEY_PREFIX` (`sk-ant-` / `xai-`), `keyLooksValid()` (prefix + ≥20 `[A-Za-z0-9_-]`), `maskKey()` → `sk-ant-…3f9a` (prefix + last 4, never more).
+- `src/lib/providers/verify.ts` — `verifyApiKey(provider, key, signal)`: free `GET /v1/models` on each provider with the same headers the streaming code uses. 2xx → `ok`, 401/403 → `rejected`, xAI's 400 "Incorrect API key provided" → `rejected`, anything else → `unreachable` (so a good key is never shown as bad because of a flaky network / CORS hiccup).
+- `src/components/Settings/ApiKeyField.tsx` — the field. Empty/editing: `max-w-xs` mono text input, placeholder `sk-ant-…`, grey hint "Anthropic keys start with sk-ant-" while the shape doesn't match. Well-formed value (typed, pasted, or hydrated): chip with check icon + masked key, status line, `REPLACE` label-button. Status: checking (grey pulsing) → "Valid API key" (green `text-emerald-500` — the one semantic colour in the monochrome UI) / "Anthropic rejected this key" (red X, destructive border) / "Key entered — could not reach Anthropic to verify" (grey). 300 ms debounce, AbortController on change. Verification is UI-only; Save still calls `setApiKey()` with the trimmed value; Cancel discards.
+- `src/components/Settings/SettingsDialog.tsx` — the two `Input` blocks replaced by `<ApiKeyField>`; local state and `handleSave` unchanged.
+- `scripts/providers-smoke.ts` — 11 cases for `keyLooksValid` / `maskKey`.
+
+**Verified:** `npm run build`; `npm run smoke`; browser pane: empty → narrow inputs; junk → hint; dummy well-formed key → chip + "rejected" (401); Replace reopens; the full key never renders. Real-key green check is manual (Ilias).
+
 ## Phase 9 — remaining manual steps (Ilias, at your Mac)
 
 These need a physical iPhone, Xcode, and CocoaPods — out of scope for the AI session.
@@ -346,6 +358,7 @@ ai4me/
 │   │   ├── Export/
 │   │   │   └── ExportMenu.tsx  ← copy / .md / .html / .pdf dropdown (header)
 │   │   ├── Settings/
+│   │   │   ├── ApiKeyField.tsx    ← masked key chip + live verify (Phase 15)
 │   │   │   └── SettingsDialog.tsx
 │   │   ├── Snapshots/
 │   │   │   ├── SaveSnapshotDialog.tsx
@@ -356,8 +369,10 @@ ai4me/
 │   │   ├── export/
 │   │   │   ├── briefing.ts    ← HTML briefing builder (marked)
 │   │   │   └── download.ts    ← blob download + PDF via html2canvas/jspdf
+│   │   ├── apiKeys.ts         ← key shape check + masking
 │   │   ├── providers/
 │   │   │   ├── anthropic.ts   ← Messages API streaming
+│   │   │   ├── verify.ts      ← GET /v1/models key check
 │   │   │   ├── xai.ts         ← OpenAI-shape streaming
 │   │   │   ├── types.ts       ← ProviderMessage, StreamEvent, etc.
 │   │   │   └── index.ts       ← streamProvider() dispatcher

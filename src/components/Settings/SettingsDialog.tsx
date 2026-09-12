@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Slider } from '@/components/ui/slider'
+import { ApiKeyField } from './ApiKeyField'
 import { useSettings } from '@/state/settings'
 import { applyFontScale } from '@/lib/theme'
 import {
@@ -117,30 +118,13 @@ export function SettingsDialog({ open, onOpenChange }: Props) {
         <div className="grid gap-5 overflow-y-auto py-2">
           <section className="grid gap-3">
             <h3 className="label">API keys</h3>
-            <div className="grid gap-2">
-              <Label htmlFor="anthropic-key">Anthropic API key</Label>
-              <Input
-                id="anthropic-key"
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="sk-ant-..."
-                value={anthropicKey}
-                onChange={(e) => setAnthropicKey(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="xai-key">xAI API key</Label>
-              <Input
-                id="xai-key"
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="xai-..."
-                value={xaiKey}
-                onChange={(e) => setXaiKey(e.target.value)}
-              />
-            </div>
+            <ApiKeyField
+              id="anthropic-key"
+              provider="anthropic"
+              value={anthropicKey}
+              onChange={setAnthropicKey}
+            />
+            <ApiKeyField id="xai-key" provider="xai" value={xaiKey} onChange={setXaiKey} />
           </section>
 
           <Separator />

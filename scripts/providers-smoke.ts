@@ -1,4 +1,5 @@
 import { buildAnthropicRequest, streamAnthropic } from '../src/lib/providers/anthropic.ts'
+import { keyLooksValid, maskKey } from '@/lib/apiKeys'
 import { streamXai } from '../src/lib/providers/xai.ts'
 import type { StreamEvent } from '../src/lib/providers/types.ts'
 
@@ -178,6 +179,22 @@ async function run() {
     })
     eq('fable request: thinking omitted when off', fableOff.thinking, undefined)
   }
+
+
+  // API key helpers (Phase 15)
+  const goodAnt = 'sk-ant-' + 'A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6'
+  const goodXai = 'xai-' + 'A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6'
+  eq('key: anthropic well-formed', keyLooksValid('anthropic', goodAnt), true)
+  eq('key: xai well-formed', keyLooksValid('xai', goodXai), true)
+  eq('key: trims whitespace', keyLooksValid('anthropic', `  ${goodAnt}\n`), true)
+  eq('key: wrong prefix', keyLooksValid('anthropic', goodXai), false)
+  eq('key: too short', keyLooksValid('xai', 'xai-abc'), false)
+  eq('key: empty', keyLooksValid('anthropic', ''), false)
+  eq('key: spaces inside rejected', keyLooksValid('anthropic', 'sk-ant-abc def ghi jkl mno pqr stu'), false)
+  eq('mask: prefix + last 4', maskKey('anthropic', goodAnt), 'sk-ant-…O5p6')
+  eq('mask: xai', maskKey('xai', goodXai), 'xai-…O5p6')
+  eq('mask: short key shows prefix only', maskKey('xai', 'xai-ab'), 'xai-…')
+  eq('mask: never leaks more than 4', maskKey('anthropic', goodAnt).length, 'sk-ant-…'.length + 4)
 
   // Anthropic: error response
   globalThis.fetch = (async () =>
