@@ -1,12 +1,15 @@
 # ai4me — session handoff
 
-A personal Claude + Grok web client, later to be wrapped with Capacitor for iPhone. Phases 1–8 are complete and verified. **Phase 9 (Capacitor wrap) is partially complete** — all the code is in place; the remaining work is `npx cap add ios` and Xcode signing, which Ilias must do at his Mac/iPhone. **Phase 10 (debate mode + Claude API modernization) is complete and verified at build + smoke.** **Phase 11 (three-way model picker: Fable / Opus / Grok 4.6) is complete and verified at build + smoke.** **Phase 12 (short cross-model turns + collapsed debate + live debate tracker) is complete and verified at build + smoke + seeded-thread browser check.** **Phase 13 (Synthesize merges both views when both models have spoken) is complete and verified at build + smoke.** **Phase 14 (cover-aligned restyle: black, heavy wordmark, tracked caps, hairlines) is complete and verified at build + smoke + seeded-thread browser check.** **Phase 15 (API key fields: masked chip + live validity check) is complete and verified at build + smoke + browser.**
+**Relay** (repo `ai4me`) — Ilias's personal Claude + Grok client. Web app on Vercel (project `relay`, https://relay-rafa1l.vercel.app), wrapped with Capacitor for iPhone.
+
+**Status (2026-09-12):** Phases 1–8 and 10–15 complete and verified. Phase 9 (Capacitor) has all code in place and the `ios/` project generated; device runs happen in Xcode on Ilias's Mac. Local `main`, `origin/main` (github.com/iliarafa/relay), Vercel production, and the synced iOS web assets are all at the same commit as of the end of the 2026-09-12 session.
 
 ## How to resume
 
-1. Read `/Users/iliasrafailidis/.claude/plans/in-this-folder-i-jaunty-charm.md` — the approved plan, full design and rationale.
-2. Read this file for context on what's already done and what's next.
-3. Phase 9 has remaining manual steps — see "Phase 9 — remaining manual steps" below.
+1. Read this file top to bottom: locked decisions, then the phase log (newest phases are 11–15, dated 2026-09-12), then Conventions.
+2. `npm run build && npm run smoke` — the tree should be green before any change (98 smoke cases as of Phase 15).
+3. Ship with the "Shipping" section below. Phase 9's device steps remain manual (Xcode).
+4. Testing in the desktop app's browser pane: **do not seed or clear the `ai4me` IndexedDB / localStorage there** — that pane profile holds Ilias's real keys and thread. Seed test data under a different DB name, or snapshot first.
 
 User is Ilias (`iamilias@gmail.com`). This is a personal app primarily for his daily use.
 
@@ -332,6 +335,39 @@ In Xcode:
 - xAI calls also bypass CORS on iOS.
 - `lib/storage/db.ts` (Dexie/IndexedDB) works as-is — Capacitor's WKWebView supports IndexedDB.
 - The `@capacitor/ios` package is purely a marker for `cap add ios` — there is nothing to import from app code.
+
+## Shipping
+
+```sh
+# 1. verify
+npm run build && npm run smoke
+
+# 2. commit, then push (remote is github.com/iliarafa/relay)
+git push origin main
+
+# 3. web → Vercel production (project already linked in .vercel/, gitignored)
+vercel --prod --yes
+# aliases: https://relay-rafa1l.vercel.app , https://relay-beige-seven.vercel.app
+# static site, no functions — nothing to check in runtime logs; curl the alias and
+# grep the served bundle for a string from the new phase to confirm it landed
+
+# 4. iOS web assets (gitignored inside ios/, so nothing to commit)
+npm run build && npx cap sync ios
+npx cap open ios   # then Run on the iPhone in Xcode
+```
+
+Vercel builds on its own machines, so its bundle hash differs from the local `dist/` hash for identical code — compare contents, not filenames. The CLI in use is 54.x; it works, but the plugin nags to upgrade.
+
+## Session log
+
+### 2026-09-12
+Phases 11–15 in one session, each committed separately, then deployed to production, synced to iOS, and pushed:
+- **11** three-way model picker (Fable / Opus / Grok 4.6), per-message model labels, Fable sends no `thinking` field.
+- **12** debate readability: 150-word verdict-first cross-model prompts, Reply length setting, debate turns fold to their first paragraph, prompt bubbles fold to captions, live debate tracker strip, thinking auto-opens while a bubble is empty.
+- **13** Synthesize merges both models' views when both have spoken (`merge` origin).
+- **14** cover-aligned restyle. A first attempt — thin Outfit typeface, violet-black, iridescent accents, animated "velocity field" — was fully built, then rejected by Ilias as "completely wrong direction" and reverted before commit. The accepted direction came from a screenshot of his site's cover page: pure black, heavy `RELAY`, grey tracked-caps labels, hairlines, static stars. **Show a mockup and get approval before restyling anything.**
+- **15** API key fields: prefix-hinted narrow input, masked chip, live validity check (xAI signals a bad key with 400, not 401).
+- Incident: while seeding a test thread in the desktop-app browser pane, the pane's real `ai4me` thread table was cleared and its theme setting reset to System. Snapshots, production, and iOS data were untouched. See "How to resume" step 4.
 
 ## Project layout (current)
 
